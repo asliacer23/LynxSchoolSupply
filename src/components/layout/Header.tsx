@@ -50,7 +50,7 @@ export function Header({ cartCount = 0, onCartClick }: HeaderProps) {
           )}
           {isAdmin() && (
             <Link to="/products/manage" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors font-semibold text-primary">
-              📦 Manage Products
+              Manage Products
             </Link>
           )}
         </nav>

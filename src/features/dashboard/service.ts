@@ -85,10 +85,33 @@ export async function updateProduct(
   return { data: data as Product | null, error };
 }
 
+export async function checkProductOrders(id: string) {
+  const { data, error } = await supabase
+    .from('order_items')
+    .select('id')
+    .eq('product_id', id)
+    .limit(1);
+
+  return { hasOrders: (data?.length ?? 0) > 0, error };
+}
+
 export async function deleteProduct(id: string, userRoles: RoleName[] = []) {
   // Authorization check - only admins can delete products
   if (!canAccess(userRoles, 'delete_product')) {
     throw new AuthorizationError('You do not have permission to delete products', 'delete_product');
+  }
+
+  // Check if product has any orders
+  const { hasOrders, error: checkError } = await checkProductOrders(id);
+  
+  if (checkError) {
+    throw new Error(checkError.message || 'Failed to check product orders');
+  }
+
+  if (hasOrders) {
+    throw new Error(
+      'Cannot delete this product because it has been used in orders. Archive it instead to hide it from customers.'
+    );
   }
 
   const { error } = await supabase
@@ -96,5 +119,32 @@ export async function deleteProduct(id: string, userRoles: RoleName[] = []) {
     .delete()
     .eq('id', id);
 
+  if (error) {
+    throw new Error(error.message || 'Failed to delete product');
+  }
+
   return { error };
+}
+
+export async function archiveProduct(
+  id: string,
+  userRoles: RoleName[] = []
+) {
+  // Authorization check - only admins can archive products
+  if (!canAccess(userRoles, 'edit_product')) {
+    throw new AuthorizationError('You do not have permission to archive products', 'edit_product');
+  }
+
+  const { data, error } = await supabase
+    .from('products')
+    .update({ is_archived: true, is_active: false })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(error.message || 'Failed to archive product');
+  }
+
+  return { data: data as Product | null, error };
 }
