@@ -25,6 +25,7 @@ const rolePermissions: Record<RoleName, Permission[]> = {
     'view_dashboard',
     'manage_users',
     'access_admin_panel',
+    'view_audit_logs',
   ],
   owner: [
     'view_products',
@@ -37,6 +38,7 @@ const rolePermissions: Record<RoleName, Permission[]> = {
     'view_dashboard',
     'manage_users',
     'access_admin_panel',
+    'view_audit_logs',
   ],
   cashier: [
     'view_products',

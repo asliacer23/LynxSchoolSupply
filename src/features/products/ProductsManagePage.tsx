@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Plus, Edit2, Trash2, Archive } from 'lucide-react';
+import { Loader2, Plus, Edit2, Trash2, Archive, RotateCcw } from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { getAllProducts, deleteProduct, archiveProduct } from '@/features/dashboard/service';
+import { getAllProducts, deleteProduct, archiveProduct, unarchiveProduct } from './service';
 import { ProductForm } from './components/ProductForm';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
@@ -18,6 +19,7 @@ export default function ProductsManagePage() {
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [productHasOrders, setProductHasOrders] = useState(false);
+  const [activeTab, setActiveTab] = useState('active');
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin())) {
@@ -32,7 +34,7 @@ export default function ProductsManagePage() {
   });
 
   const deleteProductMutation = useMutation({
-    mutationFn: (id: string) => deleteProduct(id, roles),
+    mutationFn: (id: string) => deleteProduct(id, roles, user?.id),
     onSuccess: () => {
       toast({
         title: 'Product deleted',
@@ -56,7 +58,7 @@ export default function ProductsManagePage() {
   });
 
   const archiveProductMutation = useMutation({
-    mutationFn: (id: string) => archiveProduct(id, roles),
+    mutationFn: (id: string) => archiveProduct(id, roles, user?.id),
     onSuccess: () => {
       toast({
         title: 'Product archived',
@@ -75,7 +77,27 @@ export default function ProductsManagePage() {
     },
   });
 
+  const unarchiveProductMutation = useMutation({
+    mutationFn: (id: string) => unarchiveProduct(id, roles, user?.id),
+    onSuccess: () => {
+      toast({
+        title: 'Product restored',
+        description: 'The product has been restored and is now visible to customers.',
+      });
+      refetch();
+    },
+    onError: (error: any) => {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'Failed to restore product',
+      });
+    },
+  });
+
   const products = productsData?.data ?? [];
+  const activeProducts = products.filter(p => !p.is_archived);
+  const archivedProducts = products.filter(p => p.is_archived);
 
   if (authLoading || isLoading) {
     return (
@@ -117,78 +139,144 @@ export default function ProductsManagePage() {
         </Card>
       )}
 
-      <div className="grid gap-4">
-        {products.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-muted-foreground text-lg">No products found</p>
-            <Button onClick={() => setShowForm(true)} variant="outline" className="mt-4">
-              Create First Product
-            </Button>
-          </div>
-        ) : (
-          products.map(product => (
-            <Card key={product.id}>
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold">{product.name}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">{product.description}</p>
-                    <div className="flex items-center gap-6 mt-4">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Price</p>
-                        <p className="text-lg font-semibold">₱{product.price.toFixed(2)}</p>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="active">
+            Active Products ({activeProducts.length})
+          </TabsTrigger>
+          <TabsTrigger value="archived">
+            Archived Products ({archivedProducts.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="active" className="space-y-4 mt-6">
+          {activeProducts.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-muted-foreground text-lg">No active products found</p>
+              <Button onClick={() => setShowForm(true)} variant="outline" className="mt-4">
+                Create First Product
+              </Button>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {activeProducts.map(product => (
+                <Card key={product.id}>
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold">{product.name}</h3>
+                        <p className="text-sm text-muted-foreground mt-1">{product.description}</p>
+                        <div className="flex items-center gap-6 mt-4">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Price</p>
+                            <p className="text-lg font-semibold">₱{product.price.toFixed(2)}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Stock</p>
+                            <p className="text-lg font-semibold">{product.stock}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Status</p>
+                            <p className="text-sm font-medium">
+                              {product.is_active ? '✅ Active' : '❌ Inactive'}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Stock</p>
-                        <p className="text-lg font-semibold">{product.stock}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Status</p>
-                        <p className="text-sm font-medium">
-                          {product.is_active ? '✅ Active' : '❌ Inactive'}
-                        </p>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingProduct(product.id);
+                            setShowForm(true);
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => archiveProductMutation.mutate(product.id)}
+                          className="flex items-center gap-2"
+                        >
+                          <Archive className="h-4 w-4" />
+                          Archive
+                        </Button>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setEditingProduct(product.id);
-                        setShowForm(true);
-                      }}
-                      className="flex items-center gap-2"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                      Edit
-                    </Button>
-                    {product.is_archived ? (
-                      <div className="text-xs text-muted-foreground flex items-center gap-2 px-2 py-1">
-                        <Archive className="h-4 w-4" />
-                        Archived
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="archived" className="space-y-4 mt-6">
+          {archivedProducts.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-muted-foreground text-lg">No archived products</p>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {archivedProducts.map(product => (
+                <Card key={product.id} className="opacity-75">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold">{product.name}</h3>
+                        <p className="text-sm text-muted-foreground mt-1">{product.description}</p>
+                        <div className="flex items-center gap-6 mt-4">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Price</p>
+                            <p className="text-lg font-semibold">₱{product.price.toFixed(2)}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Stock</p>
+                            <p className="text-lg font-semibold">{product.stock}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Status</p>
+                            <div className="flex items-center gap-2 text-sm font-medium text-orange-600">
+                              <Archive className="h-4 w-4" />
+                              Archived
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    ) : (
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => {
-                          setProductHasOrders(false);
-                          setDeleteId(product.id);
-                        }}
-                        className="flex items-center gap-2"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Delete
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => unarchiveProductMutation.mutate(product.id)}
+                          className="flex items-center gap-2"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                          Restore
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            setProductHasOrders(false);
+                            setDeleteId(product.id);
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>

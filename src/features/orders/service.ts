@@ -4,6 +4,7 @@ import type { Order, OrderItem, CartItem, RoleName } from '@/types/database';
 
 /**
  * Create order (user creates their own, cashier creates on behalf of user, superadmin can create any)
+ * Delegates to shared service but adds authorization layer
  */
 export async function createOrder(
   userId: string,

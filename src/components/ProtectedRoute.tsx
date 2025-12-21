@@ -20,6 +20,7 @@ export function ProtectedRoute({
 }: ProtectedRouteProps) {
   const { user, roles, loading } = useAuth();
   const isAuthenticated = !!user;
+  const isCashier = roles.includes('cashier') && !roles.includes('superadmin') && !roles.includes('owner');
 
   if (loading) {
     return (
@@ -29,12 +30,22 @@ export function ProtectedRoute({
     );
   }
 
+  // Redirect cashiers to POS system - they can only access /cashier/pos
+  if (isCashier && !window.location.pathname.startsWith('/cashier/pos')) {
+    return <Navigate to="/cashier/pos" replace />;
+  }
+
   const accessCheck = canAccessRoute(roles, isAuthenticated, config);
 
   if (!accessCheck.allowed) {
     // Redirect to login if not authenticated
     if (!isAuthenticated && config.requireAuth) {
       return <Navigate to={fallbackPath} replace />;
+    }
+
+    // Redirect cashiers to POS if they don't have permission
+    if (isCashier) {
+      return <Navigate to="/cashier/pos" replace />;
     }
 
     // Show access denied for authenticated users without permission

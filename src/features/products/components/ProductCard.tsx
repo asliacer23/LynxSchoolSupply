@@ -7,7 +7,7 @@ import type { Product } from '@/types/database';
 import { useCartContext } from '@/contexts/CartContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { getPrimaryImageUrl } from '../service';
+import { getPrimaryImageUrl } from '@/lib/shared-services/imageService';
 
 interface ProductCardProps {
   product: Product;

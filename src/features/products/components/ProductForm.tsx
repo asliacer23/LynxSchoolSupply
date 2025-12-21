@@ -12,8 +12,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { getCategories, getProduct } from '../service';
-import { createProduct, updateProduct } from '@/features/dashboard/service';
+import { getCategories, getProduct, uploadProductPhoto, createProduct, updateProduct } from '../service';
+import { PhotoUpload } from './PhotoUpload';
+import type { ProductImage } from '@/types/database';
 
 const productSchema = z.object({
   name: z.string().min(2, 'Product name must be at least 2 characters'),
@@ -35,6 +36,9 @@ interface ProductFormProps {
 export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps) {
   const { user, roles } = useAuth();
   const { toast } = useToast();
+  const [photos, setPhotos] = useState<ProductImage[]>([]);
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const [createdProductId, setCreatedProductId] = useState<string | null>(null);
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -70,6 +74,7 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
         category_id: product.category_id || '',
         is_active: product.is_active,
       });
+      setPhotos(product.images || []);
     }
   }, [productData, form]);
 
@@ -85,11 +90,44 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
       };
       return createProduct(productData, roles, user?.id);
     },
-    onSuccess: () => {
-      toast({
-        title: 'Product created',
-        description: 'The product has been successfully created.',
-      });
+    onSuccess: async (result: any) => {
+      const newProductId = result?.data?.id;
+      
+      if (newProductId && photoFiles.length > 0) {
+        // Upload photos for the newly created product
+        setCreatedProductId(newProductId);
+        try {
+          const uploadPromises = photoFiles.map(file => 
+            uploadProductPhoto(newProductId, file, user?.id)
+          );
+          const results = await Promise.all(uploadPromises);
+          
+          const successfulUploads = results.filter(r => r.data);
+          if (successfulUploads.length > 0) {
+            toast({
+              title: 'Product created with photos',
+              description: `Product and ${successfulUploads.length} photo(s) uploaded successfully.`,
+            });
+          } else {
+            toast({
+              title: 'Product created',
+              description: 'Product created, but photo upload failed. You can add photos later.',
+            });
+          }
+        } catch (error) {
+          toast({
+            variant: 'destructive',
+            title: 'Photos not uploaded',
+            description: 'Product created, but photos failed to upload. You can add them later.',
+          });
+        }
+      } else {
+        toast({
+          title: 'Product created',
+          description: 'The product has been successfully created.',
+        });
+      }
+      
       onSuccess();
     },
     onError: (error: any) => {
@@ -111,7 +149,7 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
         category_id: data.category_id,
         is_active: data.is_active,
       };
-      return updateProduct(productId!, productData, roles);
+      return updateProduct(productId!, productData, roles, user?.id);
     },
     onSuccess: () => {
       toast({
@@ -252,6 +290,24 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
             </FormItem>
           )}
         />
+
+        {productId && (
+          <PhotoUpload
+            productId={productId}
+            existingPhotos={photos}
+            onPhotosChange={setPhotos}
+            disabled={isLoading}
+          />
+        )}
+
+        {!productId && (
+          <PhotoUpload
+            existingPhotos={[]}
+            onPreviewFiles={setPhotoFiles}
+            previewFiles={photoFiles}
+            disabled={isLoading}
+          />
+        )}
 
         <div className="flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>

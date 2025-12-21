@@ -134,6 +134,13 @@ export interface Notification {
   message: string | null;
   is_read: boolean;
   created_at: string;
+  notification_type?: string | null;
+  related_entity_id?: string | null;
+  related_entity_type?: string | null;
+  priority?: 'low' | 'medium' | 'high' | 'critical';
+  metadata?: Record<string, unknown> | null;
+  status?: 'pending' | 'processing' | 'completed' | 'cancelled';
+  delivery_channel?: 'database' | 'email' | 'sms' | 'push';
 }
 
 export interface SystemSetting {
@@ -168,4 +175,5 @@ export type Permission =
   | 'update_order_status'
   | 'view_dashboard'
   | 'manage_users'
-  | 'access_admin_panel';
+  | 'access_admin_panel'
+  | 'view_audit_logs';

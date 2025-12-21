@@ -5,14 +5,13 @@ import { useQuery } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { StatCard } from './components/StatCard';
-import { getDashboardStats, getAllProducts } from './service';
-import { getAllOrders, updateOrderStatus } from '@/features/orders/service';
+import { getDashboardStats, getAllProducts, getAllOrders, updateOrderStatus } from './service';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
-import { getPrimaryImageUrl } from '@/features/products/service';
+import { getPrimaryImageUrl } from '@/lib/shared-services/imageService';
 
 export default function AdminDashboardPage() {
   const { user, roles, loading: authLoading, isAdmin, isCashier, isStaff } = useAuth();

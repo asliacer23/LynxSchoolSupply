@@ -4,7 +4,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/com
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCartContext } from '@/contexts/CartContext';
-import { getPrimaryImageUrl } from '@/features/products/service';
+import { getPrimaryImageUrl } from '@/lib/shared-services/imageService';
 
 interface CartDrawerProps {
   open: boolean;

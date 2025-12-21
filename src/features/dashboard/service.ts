@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabase';
 import { canAccess, AuthorizationError } from '@/lib/authorization';
 import type { Product, RoleName } from '@/types/database';
+// Import shared services to avoid duplication
+import { getAllOrders as sharedGetAllOrders, updateOrderStatus as sharedUpdateOrderStatus } from '@/lib/shared-services/orderService';
 
 export async function getDashboardStats(userRoles: RoleName[] = []) {
   // Authorization check
@@ -30,6 +32,22 @@ export async function getDashboardStats(userRoles: RoleName[] = []) {
     lowStockProducts,
     totalUsers: users.length,
   };
+}
+
+/**
+ * Get all orders for dashboard view
+ * Wrapper around shared service for dashboard-specific needs
+ */
+export async function getAllOrders() {
+  return sharedGetAllOrders();
+}
+
+/**
+ * Update order status
+ * Wrapper around shared service for dashboard-specific needs
+ */
+export async function updateOrderStatus(orderId: string, status: string) {
+  return sharedUpdateOrderStatus(orderId, status);
 }
 
 export async function getAllProducts(userRoles: RoleName[] = []) {
@@ -144,6 +162,29 @@ export async function archiveProduct(
 
   if (error) {
     throw new Error(error.message || 'Failed to archive product');
+  }
+
+  return { data: data as Product | null, error };
+}
+
+export async function unarchiveProduct(
+  id: string,
+  userRoles: RoleName[] = []
+) {
+  // Authorization check - only admins can unarchive products
+  if (!canAccess(userRoles, 'edit_product')) {
+    throw new AuthorizationError('You do not have permission to unarchive products', 'edit_product');
+  }
+
+  const { data, error } = await supabase
+    .from('products')
+    .update({ is_archived: false })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(error.message || 'Failed to unarchive product');
   }
 
   return { data: data as Product | null, error };

@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCartContext } from '@/contexts/CartContext';
 import { useToast } from '@/hooks/use-toast';
 import { createOrder } from './service';
-import { getPrimaryImageUrl } from '@/features/products/service';
+import { getPrimaryImageUrl } from '@/lib/shared-services/imageService';
 
 export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);

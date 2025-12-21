@@ -7,7 +7,7 @@ import { useProduct } from './hooks';
 import { useCartContext } from '@/contexts/CartContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { getPrimaryImageUrl } from './service';
+import { getPrimaryImageUrl } from '@/lib/shared-services/imageService';
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();

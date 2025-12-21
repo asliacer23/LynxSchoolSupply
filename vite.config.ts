@@ -15,4 +15,42 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks
+          react: ["react", "react-dom"],
+          supabase: ["@supabase/supabase-js"],
+          ui: ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-tabs"],
+          forms: ["react-hook-form", "zod"],
+          tanstack: ["@tanstack/react-query"],
+          
+          // Feature chunks
+          products: [
+            "src/features/products/service.ts",
+            "src/features/products/ProductsPage.tsx",
+            "src/features/products/ProductDetailPage.tsx",
+          ],
+          orders: [
+            "src/features/orders/service.ts",
+            "src/features/orders/CheckoutPage.tsx",
+            "src/features/orders/OrdersPage.tsx",
+          ],
+          cashier: [
+            "src/features/cashier/CashierPOSPage.tsx",
+            "src/features/cashier/service.ts",
+          ],
+          dashboard: [
+            "src/features/dashboard/AdminDashboardPage.tsx",
+            "src/features/dashboard/service.ts",
+          ],
+          payments: [
+            "src/features/payments/service.ts",
+          ],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
+  },
 }));

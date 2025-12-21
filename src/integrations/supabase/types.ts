@@ -181,25 +181,46 @@ export type Database = {
       notifications: {
         Row: {
           created_at: string | null
+          delivery_channel: string | null
           id: string
           is_read: boolean | null
           message: string | null
+          metadata: Json | null
+          notification_type: string | null
+          priority: string | null
+          related_entity_id: string | null
+          related_entity_type: string | null
+          status: string | null
           title: string | null
           user_id: string | null
         }
         Insert: {
           created_at?: string | null
+          delivery_channel?: string | null
           id?: string
           is_read?: boolean | null
           message?: string | null
+          metadata?: Json | null
+          notification_type?: string | null
+          priority?: string | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          status?: string | null
           title?: string | null
           user_id?: string | null
         }
         Update: {
           created_at?: string | null
+          delivery_channel?: string | null
           id?: string
           is_read?: boolean | null
           message?: string | null
+          metadata?: Json | null
+          notification_type?: string | null
+          priority?: string | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          status?: string | null
           title?: string | null
           user_id?: string | null
         }

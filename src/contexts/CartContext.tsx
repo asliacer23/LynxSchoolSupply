@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import type { Cart, CartItem, Product } from '@/types/database';
 import { useAuth } from '@/hooks/useAuth';
 import { getUserCart, addItemToCart, updateCartItemQuantity, removeCartItem, clearCart as clearCartService } from '@/features/cart/service';
-import { getPrimaryImageUrl } from '@/features/products/service';
+import { getPrimaryImageUrl } from '@/lib/shared-services/imageService';
 
 interface CartContextType {
   cart: Cart | null;

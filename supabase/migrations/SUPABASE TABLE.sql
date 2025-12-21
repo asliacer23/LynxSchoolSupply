@@ -361,6 +361,7 @@ CREATE POLICY "Admins can view all files" ON public.files FOR SELECT USING (publ
 -- Notifications
 CREATE POLICY "Users can view own notifications" ON public.notifications FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can update own notifications" ON public.notifications FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "System can create notifications" ON public.notifications FOR INSERT WITH CHECK (true);
 CREATE POLICY "Admins can manage notifications" ON public.notifications FOR ALL USING (public.is_admin(auth.uid()));
 
 -- System Settings
