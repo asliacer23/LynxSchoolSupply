@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { uploadProductPhoto, deleteProductPhoto } from '../service';
+import { uploadProductPhoto, deleteProductPhoto } from '../services/products.service';
 import type { ProductImage } from '@/types/database';
 
 interface PhotoUploadProps {

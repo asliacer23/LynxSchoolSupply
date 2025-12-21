@@ -85,6 +85,13 @@ export function useAuth() {
         roles,
         loading: false,
       }));
+
+      // Log role info for debugging
+      if (roles.length === 0) {
+        console.warn('⚠️ User has no roles assigned:', userId);
+      } else {
+        console.log('✅ User roles loaded:', roles);
+      }
     } catch (error) {
       console.error('Error fetching user data:', error);
       setState(prev => ({ ...prev, loading: false }));
@@ -97,16 +104,78 @@ export function useAuth() {
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: { full_name: fullName },
-      },
-    });
-    return { error };
+    const redirectUrl = `${window.location.origin}/auth/login`;
+    
+    try {
+      // Create Supabase auth user
+      // Supabase will automatically send confirmation email
+      const { data: authData, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: { full_name: fullName },
+        },
+      });
+
+      if (error) {
+        return { error };
+      }
+
+      // Create profile and assign role in background
+      // Don't block signup flow even if this fails
+      if (authData.user?.id) {
+        createProfileAndRoleAsync(authData.user.id, fullName, email);
+      }
+
+      return { error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
+  const createProfileAndRoleAsync = async (userId: string, fullName: string, email: string) => {
+    try {
+      // Create profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: userId,
+          full_name: fullName,
+          email: email,
+          is_active: true,
+        }, {
+          onConflict: 'id',
+        });
+
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        return;
+      }
+
+      // Get user role ID
+      const { data: roleData } = await supabase
+        .from('roles')
+        .select('id')
+        .eq('name', 'user')
+        .single();
+
+      // Assign user role
+      if (roleData) {
+        await supabase
+          .from('user_roles')
+          .upsert({
+            user_id: userId,
+            role_id: roleData.id,
+          }, {
+            onConflict: 'user_id,role_id',
+          });
+        
+        console.log('✅ Profile and role created for user:', userId);
+      }
+    } catch (error) {
+      console.error('Background profile/role creation failed:', error);
+    }
   };
 
   const signOut = async () => {
@@ -114,10 +183,12 @@ export function useAuth() {
     return { error };
   };
 
+  // Role checking functions
   const hasRole = (role: RoleName) => state.roles.includes(role);
   const isAdmin = () => hasRole('superadmin') || hasRole('owner');
   const isCashier = () => hasRole('cashier');
   const isStaff = () => isAdmin() || isCashier();
+  const isCustomer = () => hasRole('user') && !isStaff();
 
   return {
     ...state,
@@ -128,5 +199,6 @@ export function useAuth() {
     isAdmin,
     isCashier,
     isStaff,
+    isCustomer,
   };
 }

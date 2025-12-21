@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { formatDistanceToNow } from 'date-fns';
-import { useNotifications, useUnreadCount, useMarkAsRead, useDeleteNotification, useMarkAllAsRead } from '../hooks';
+import { useNotifications, useUnreadCount, useMarkAsRead, useDeleteNotification, useMarkAllAsRead } from '../hooks/useNotifications';
 import { Loader2 } from 'lucide-react';
 
 export function NotificationDropdown() {

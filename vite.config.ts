@@ -28,25 +28,21 @@ export default defineConfig(({ mode }) => ({
           
           // Feature chunks
           products: [
-            "src/features/products/service.ts",
-            "src/features/products/ProductsPage.tsx",
-            "src/features/products/ProductDetailPage.tsx",
+            "src/features/products/services/products.service.ts",
+            "src/features/products/pages/ProductsPage.tsx",
+            "src/features/products/pages/ProductDetailPage.tsx",
           ],
           orders: [
-            "src/features/orders/service.ts",
-            "src/features/orders/CheckoutPage.tsx",
-            "src/features/orders/OrdersPage.tsx",
-          ],
-          cashier: [
-            "src/features/cashier/CashierPOSPage.tsx",
-            "src/features/cashier/service.ts",
+            "src/features/orders/services/orders.service.ts",
+            "src/features/orders/pages/CheckoutPage.tsx",
+            "src/features/orders/pages/OrdersPage.tsx",
           ],
           dashboard: [
-            "src/features/dashboard/AdminDashboardPage.tsx",
-            "src/features/dashboard/service.ts",
+            "src/features/dashboard/pages/DashboardPage.tsx",
+            "src/features/dashboard/services/dashboard.service.ts",
           ],
           payments: [
-            "src/features/payments/service.ts",
+            "src/features/payments/services/payments.service.ts",
           ],
         },
       },

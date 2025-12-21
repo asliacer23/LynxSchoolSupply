@@ -21,8 +21,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useProcessPayment } from '../hooks';
-import { validatePaymentMethod, getAvailablePaymentMethods, type PaymentMethod } from '../service';
+import { useProcessPayment } from '../hooks/usePayments';
+import { validatePaymentMethod, getAvailablePaymentMethods, type PaymentMethod } from '../services/payments.service';
 import { MobilePaymentQR } from './MobilePaymentQR';
 
 // Form validation schemas

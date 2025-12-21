@@ -9,20 +9,20 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { roleCache } from "@/lib/role-cache";
 
 // Feature pages
-import HomePage from "@/features/home/HomePage";
-import LoginPage from "@/features/auth/LoginPage";
-import RegisterPage from "@/features/auth/RegisterPage";
-import ProductsPage from "@/features/products/ProductsPage";
-import ProductDetailPage from "@/features/products/ProductDetailPage";
-import ProductsManagePage from "@/features/products/ProductsManagePage";
-import OrdersPage from "@/features/orders/OrdersPage";
-import CheckoutPage from "@/features/orders/CheckoutPage";
-import AdminDashboardPage from "@/features/dashboard/AdminDashboardPage";
-import NotificationsPage from "@/features/notifications/NotificationsPage";
-import PaymentHistoryPage from "@/features/payments/PaymentHistoryPage";
-import CashierPOSPage from "@/features/cashier/CashierPOSPage";
-import AuditLogsPage from "@/features/audit-logs/AuditLogsPage";
-import CleanupPage from "@/features/admin/CleanupPage";
+import HomePage from "@/features/home/pages/HomePage";
+import LoginPage from "@/features/auth/pages/LoginPage";
+import RegisterPage from "@/features/auth/pages/RegisterPage";
+import ProductsPage from "@/features/products/pages/ProductsPage";
+import ProductDetailPage from "@/features/products/pages/ProductDetailPage";
+import ProductsManagePage from "@/features/products/pages/ProductsManagePage";
+import OrdersPage from "@/features/orders/pages/OrdersPage";
+import CheckoutPage from "@/features/orders/pages/CheckoutPage";
+import DashboardPage from "@/features/dashboard/pages/DashboardPage";
+import CleanupPage from "@/features/dashboard/pages/CleanupPage";
+import NotificationsPage from "@/features/notifications/pages/NotificationsPage";
+import PaymentHistoryPage from "@/features/payments/pages/PaymentHistoryPage";
+import POSPage from "@/features/orders/pages/POSPage";
+import AuditLogsPage from "@/features/audit-logs/pages/AuditLogsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -130,7 +130,7 @@ const App = () => {
                     requiredPermissions: ['view_dashboard']
                   }}
                 >
-                  <AdminDashboardPage />
+                  <DashboardPage />
                 </ProtectedRoute>
               } 
             />
@@ -189,19 +189,20 @@ const App = () => {
                     requiredRoles: ['superadmin', 'owner', 'cashier']
                   }}
                 >
-                  <CashierPOSPage />
+                  <POSPage />
                 </ProtectedRoute>
               } 
             />
 
-            {/* Audit Logs - admin only (superadmin, owner) */}
+            {/* Audit Logs - superadmin and owner only (NOT cashier) */}
             <Route 
               path="/admin/audit-logs" 
               element={
                 <ProtectedRoute 
                   config={{ 
                     requireAuth: true,
-                    requiredRoles: ['superadmin', 'owner']
+                    requiredRoles: ['superadmin', 'owner'],
+                    requiredPermissions: ['view_audit_logs']
                   }}
                 >
                   <AuditLogsPage />
@@ -216,7 +217,8 @@ const App = () => {
                 <ProtectedRoute 
                   config={{ 
                     requireAuth: true,
-                    requiredRoles: ['superadmin', 'owner']
+                    requiredRoles: ['superadmin', 'owner'],
+                    requiredPermissions: ['access_admin_panel']
                   }}
                 >
                   <CleanupPage />

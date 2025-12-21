@@ -1,4 +1,4 @@
-import { createAuditLog } from '@/features/audit-logs/service';
+import { createAuditLog } from '@/features/audit-logs/services/auditLogs.service';
 
 /**
  * Log helper for automatic audit logging

@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { Cart, CartItem, Product } from '@/types/database';
 import { useAuth } from '@/hooks/useAuth';
-import { getUserCart, addItemToCart, updateCartItemQuantity, removeCartItem, clearCart as clearCartService } from '@/features/cart/service';
+import { getUserCart, addItemToCart, updateCartItemQuantity, removeCartItem, clearCart as clearCartService } from '@/features/cart/services/cart.service';
 import { getPrimaryImageUrl } from '@/lib/shared-services/imageService';
 
 interface CartContextType {

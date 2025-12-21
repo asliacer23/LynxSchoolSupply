@@ -16,49 +16,50 @@ import {
   deliverToRole,
   deliverToRoles
 } from '@/lib/role-based-notifications';
-import { createNotification } from '@/features/notifications/service';
+import { createNotification } from '@/features/notifications/services/notifications.service';
 
 /**
  * Trigger order-related notifications to appropriate roles
+ * NOTE: Cashier removed - they know they just created the order
+ * NOTE: Only notifies actual customers (user_id not null), not walk-in customers
  */
 export async function triggerOrderCreatedNotification(
-  userId: string,
+  userId: string | null,
   orderId: string,
   total: number
 ) {
   try {
-    // Build notifications (no DB queries yet)
-    const userNotif = UserNotifications.buildOrderPlaced(orderId, total);
-    const cashierNotif = CashierNotifications.buildNewOrderAlert(1, total);
-    
-    // Deliver to user directly
-    const { data: user } = await supabase
-      .from('profiles')
-      .select('email')
-      .eq('id', userId)
-      .single();
+    // Only notify if there's an actual customer account (not walk-in)
+    if (userId) {
+      // Build notifications (no DB queries yet)
+      const userNotif = UserNotifications.buildOrderPlaced(orderId, total);
+      
+      // Deliver to user directly
+      const { data: user } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', userId)
+        .single();
 
-    if (user) {
-      await createNotification(userId, userNotif.title, userNotif.message, {
-        notification_type: userNotif.notification_type,
-        related_entity_id: userNotif.related_entity_id,
-        related_entity_type: userNotif.related_entity_type,
-        priority: userNotif.priority,
-        metadata: userNotif.metadata,
-        delivery_channel: userNotif.delivery_channel,
-      });
+      if (user) {
+        await createNotification(userId, userNotif.title, userNotif.message, {
+          notification_type: userNotif.notification_type,
+          related_entity_id: userNotif.related_entity_id,
+          related_entity_type: userNotif.related_entity_type,
+          priority: userNotif.priority,
+          metadata: userNotif.metadata,
+          delivery_channel: userNotif.delivery_channel,
+        });
+      }
+
+      // Deliver to owner if high-value order (one role query)
+      if (total > 100 && user?.email) {
+        const ownerNotif = OwnerNotifications.buildHighValueOrder(orderId, total, user.email);
+        await deliverToRole('owner', ownerNotif);
+      }
     }
 
-    // Deliver to cashiers (one role query)
-    await deliverToRole('cashier', cashierNotif);
-
-    // Deliver to owner if high-value order (one role query)
-    if (total > 100 && user?.email) {
-      const ownerNotif = OwnerNotifications.buildHighValueOrder(orderId, total, user.email);
-      await deliverToRole('owner', ownerNotif);
-    }
-
-    // Superadmin gets system event
+    // Superadmin gets system event (always notify for all orders)
     const adminNotif = SuperadminNotifications.buildSystemEvent(
       `New order created: ${orderId.slice(0, 8)} - $${total.toFixed(2)}`,
       'info'
@@ -72,6 +73,7 @@ export async function triggerOrderCreatedNotification(
 
 /**
  * Trigger order status change notifications
+ * NOTE: Cashier removed - they don't manage order processing
  */
 export async function triggerOrderStatusNotification(
   userId: string,
@@ -91,12 +93,6 @@ export async function triggerOrderStatusNotification(
       metadata: userNotif.metadata,
       delivery_channel: userNotif.delivery_channel,
     });
-
-    // Deliver to cashiers for certain statuses
-    if (['processing', 'completed'].includes(newStatus)) {
-      const cashierNotif = CashierNotifications.buildNewOrderAlert(1, 0);
-      await deliverToRole('cashier', cashierNotif);
-    }
   } catch (error) {
     console.error('Failed to send order status notification:', error);
   }
@@ -104,6 +100,7 @@ export async function triggerOrderStatusNotification(
 
 /**
  * Trigger payment-related notifications
+ * Primary notification for cashier: Payment completed
  */
 export async function triggerPaymentCompletedNotification(
   userId: string,
@@ -120,15 +117,17 @@ export async function triggerPaymentCompletedNotification(
       'info'
     );
 
-    // Deliver to user
-    await createNotification(userId, userNotif.title, userNotif.message, {
-      notification_type: userNotif.notification_type,
-      related_entity_id: userNotif.related_entity_id,
-      related_entity_type: userNotif.related_entity_type,
-      priority: userNotif.priority,
-      metadata: userNotif.metadata,
-      delivery_channel: userNotif.delivery_channel,
-    });
+    // Deliver to user if exists
+    if (userId) {
+      await createNotification(userId, userNotif.title, userNotif.message, {
+        notification_type: userNotif.notification_type,
+        related_entity_id: userNotif.related_entity_id,
+        related_entity_type: userNotif.related_entity_type,
+        priority: userNotif.priority,
+        metadata: userNotif.metadata,
+        delivery_channel: userNotif.delivery_channel,
+      });
+    }
 
     // Batch deliver to cashiers and superadmins
     await deliverToRoles({

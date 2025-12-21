@@ -10,7 +10,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { roleCache } from '@/lib/role-cache';
-import { createNotification } from '@/features/notifications/service';
+import { createNotification } from '@/features/notifications/services/notifications.service';
 
 /**
  * Base notification data structure

@@ -5,9 +5,13 @@ import { triggerOrderCreatedNotification, triggerOrderStatusNotification } from 
 /**
  * Create a new order
  * Shared by: cashier, orders, dashboard
+ * @param userId - Customer user ID (null for walk-in customers in POS)
+ * @param cartItems - Array of items to order
+ * @param cashierId - Cashier ID (for POS orders)
+ * @param userRoles - User roles for authorization
  */
 export async function createOrder(
-  userId: string,
+  userId: string | null,
   cartItems: Array<{ product_id: string; quantity: number }>,
   cashierId?: string,
   userRoles: string[] = []
@@ -81,7 +85,7 @@ export async function createOrder(
  * Get all orders
  * Shared by: dashboard, orders-management
  */
-export async function getAllOrders() {
+export async function getAllOrders(userRoles: string[] = [], currentUserId?: string) {
   const { data, error } = await supabase
     .from('orders')
     .select('id, user_id, cashier_id, status, total, created_at, updated_at')
@@ -99,7 +103,7 @@ export async function getAllOrders() {
  * Update order status
  * Shared by: dashboard, orders-management
  */
-export async function updateOrderStatus(orderId: string, status: string, userId?: string) {
+export async function updateOrderStatus(orderId: string, status: string, userRoles: string[] = [], userId?: string) {
   const { data, error } = await supabase
     .from('orders')
     .update({ status })

@@ -7,6 +7,11 @@ import type { RoleName, Permission } from '@/types/database';
 
 /**
  * Permission matrix defining what each role can do
+ * 
+ * SUPERADMIN: Full system access (16 permissions)
+ * OWNER: Business operations & order management (14 permissions)
+ * CASHIER: POS operations only (5 permissions - no order management)
+ * USER: Shopping only (6 permissions)
  */
 const rolePermissions: Record<RoleName, Permission[]> = {
   superadmin: [
@@ -33,7 +38,12 @@ const rolePermissions: Record<RoleName, Permission[]> = {
     'edit_product',
     'delete_product',
     'manage_categories',
+    'view_cart',
+    'add_to_cart',
+    'checkout',
+    'view_own_orders',
     'view_all_orders',
+    'create_order',
     'update_order_status',
     'view_dashboard',
     'manage_users',
@@ -43,10 +53,9 @@ const rolePermissions: Record<RoleName, Permission[]> = {
   cashier: [
     'view_products',
     'checkout',
-    'view_all_orders',
+    'view_own_orders', // Cashier can only see their own sales
     'create_order',
-    'update_order_status',
-    'view_dashboard',
+    'view_dashboard', // Cashier-specific dashboard (sales only)
   ],
   user: [
     'view_products',

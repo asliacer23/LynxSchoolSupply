@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { getCategories, getProduct, uploadProductPhoto, createProduct, updateProduct } from '../service';
+import { getCategories, getProduct, uploadProductPhoto, createProduct, updateProduct } from '../services/products.service';
 import { PhotoUpload } from './PhotoUpload';
 import type { ProductImage } from '@/types/database';
 
