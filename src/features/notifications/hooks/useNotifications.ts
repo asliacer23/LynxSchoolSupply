@@ -21,6 +21,9 @@ export function useNotifications(limit: number = 50) {
     queryKey: ['notifications', user?.id],
     queryFn: () => getUserNotifications(user?.id || '', limit),
     enabled: !!user?.id,
+    refetchOnWindowFocus: true,
+    staleTime: 15000, // Consider data fresh for 15 seconds - notifications should be fresh
+    refetchInterval: 30000, // Refetch every 30 seconds
   });
 }
 

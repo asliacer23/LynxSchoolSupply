@@ -96,8 +96,6 @@ export interface Order {
   cashier_id: string | null;
   status: 'pending' | 'processing' | 'completed' | 'cancelled';
   total: number;
-  delivery_address: string | null;
-  delivery_contact_num: string | null;
   created_at: string;
   updated_at: string;
   items?: OrderItem[];

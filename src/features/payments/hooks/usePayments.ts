@@ -20,6 +20,8 @@ export function usePaymentByOrderId(orderId: string) {
     queryKey: ['payment', orderId],
     queryFn: () => getPaymentByOrderId(orderId),
     enabled: !!orderId,
+    refetchOnWindowFocus: true,
+    staleTime: 30000, // Consider data fresh for 30 seconds
   });
 }
 
@@ -31,6 +33,8 @@ export function usePayment(paymentId: string) {
     queryKey: ['payment', paymentId],
     queryFn: () => getPayment(paymentId),
     enabled: !!paymentId,
+    refetchOnWindowFocus: true,
+    staleTime: 30000, // Consider data fresh for 30 seconds
   });
 }
 
@@ -93,6 +97,8 @@ export function useUserPayments() {
     queryKey: ['payments', 'user', user?.id],
     queryFn: () => getUserPayments(user?.id || ''),
     enabled: !!user?.id,
+    refetchOnWindowFocus: true,
+    staleTime: 30000, // Consider data fresh for 30 seconds
   });
 }
 
@@ -105,6 +111,8 @@ export function useAllPayments() {
   return useQuery({
     queryKey: ['payments', 'all'],
     queryFn: () => getAllPayments(roles),
+    refetchOnWindowFocus: true,
+    staleTime: 30000, // Consider data fresh for 30 seconds
   });
 }
 

@@ -36,18 +36,26 @@ export default function DashboardPage() {
     queryKey: ['dashboard-stats'],
     queryFn: () => getDashboardStats(roles),
     enabled: !!user && canAccess(roles, 'view_dashboard'),
+    refetchOnWindowFocus: true,
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    refetchInterval: 60000, // Refetch every 60 seconds
   });
 
   const { data: ordersData, isLoading: ordersLoading, refetch: refetchOrders } = useQuery({
     queryKey: ['all-orders'],
     queryFn: () => getAllOrders(roles, user?.id),
     enabled: !!user && canAccess(roles, 'view_all_orders'),
+    refetchOnWindowFocus: true,
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    refetchInterval: 45000, // Refetch every 45 seconds
   });
 
   const { data: productsData, isLoading: productsLoading, refetch: refetchProducts } = useQuery({
     queryKey: ['all-products'],
     queryFn: () => getAllProducts(roles),
     enabled: !!user && canAccess(roles, 'edit_product'),
+    refetchOnWindowFocus: true,
+    staleTime: 60000, // Consider data fresh for 60 seconds
   });
 
   const handleStatusChange = async (orderId: string, status: string) => {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, Loader2, CheckCircle, Package, AlertCircle, MapPin, Phone } from 'lucide-react';
+import { ShoppingBag, Loader2, CheckCircle, Package, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -11,14 +11,12 @@ import { useToast } from '@/hooks/use-toast';
 import { createOrder } from '@/lib/shared-services/orderService';
 import { getPrimaryImageUrl } from '@/lib/shared-services/imageService';
 import { validateOrder } from '@/lib/cart-validation';
-import { AddressModal } from '@/features/address/components/AddressModal';
 
 export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [addressModalOpen, setAddressModalOpen] = useState(false);
-  const { user, profile, roles, loading: authLoading, refreshProfile } = useAuth();
+  const { user, profile, roles, loading: authLoading } = useAuth();
   const { items, total, clearCart } = useCartContext();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -45,24 +43,16 @@ export default function CheckoutPage() {
     }
   }, [items, total]);
 
-  // Auto-open address modal if user has no address
-  useEffect(() => {
-    if (!authLoading && user && profile && !profile.address && !success) {
-      setAddressModalOpen(true);
-    }
-  }, [authLoading, user, profile, success]);
-
   const handlePlaceOrder = async () => {
-    if (!user || !profile) return;
+    if (!user) return;
 
-    // Check address before placing order
-    if (!profile.address || !profile.contact_num) {
+    // Check if address and contact are available
+    if (!profile?.address || !profile?.contact_num) {
       toast({
         variant: 'destructive',
         title: 'Delivery address required',
-        description: 'Please add your delivery address and contact number',
+        description: 'Please update your delivery address and contact number in your profile',
       });
-      setAddressModalOpen(true);
       return;
     }
 
@@ -82,10 +72,7 @@ export default function CheckoutPage() {
       user.id, 
       items, 
       user.id, 
-      roles,
-      undefined,
-      profile.address,
-      profile.contact_num
+      roles
     );
     setLoading(false);
 
@@ -209,40 +196,20 @@ export default function CheckoutPage() {
               <CardTitle>Order Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Delivery Address Section */}
-              <div className="space-y-2 pb-4 border-b">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Delivery Address</span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setAddressModalOpen(true)}
-                  >
-                    {profile?.address ? 'Edit' : 'Add'}
-                  </Button>
-                </div>
+              {/* Delivery Address */}
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm">Delivery Address</h4>
                 {profile?.address ? (
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p className="line-clamp-2">{profile.address}</p>
-                    {profile.contact_num && (
-                      <p className="flex items-center gap-2">
-                        <Phone className="h-3 w-3" />
-                        {profile.contact_num}
-                      </p>
-                    )}
+                  <div className="text-sm space-y-1">
+                    <p className="text-muted-foreground">{profile.address}</p>
+                    <p className="text-muted-foreground text-xs">Contact: {profile.contact_num}</p>
                   </div>
                 ) : (
-                  <Alert variant="destructive" className="py-2">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription className="text-xs">
-                      Delivery address required
-                    </AlertDescription>
-                  </Alert>
+                  <p className="text-sm text-destructive">Please update your profile with address</p>
                 )}
               </div>
+
+              <Separator />
 
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Items</span>
@@ -267,7 +234,7 @@ export default function CheckoutPage() {
                 className="w-full"
                 size="lg"
                 disabled={
-                  loading || 
+                  loading ||
                   items.length === 0 || 
                   validationError !== null ||
                   !profile?.address ||
@@ -285,16 +252,6 @@ export default function CheckoutPage() {
           </Card>
         </div>
       </div>
-
-      {user && profile && (
-        <AddressModal
-          open={addressModalOpen}
-          onOpenChange={setAddressModalOpen}
-          profile={profile}
-          userId={user.id}
-          onAddressUpdated={() => refreshProfile()}
-        />
-      )}
     </div>
   );
 }

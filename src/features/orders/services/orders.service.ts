@@ -36,8 +36,8 @@ export async function createOrder(
       cashier_id: cashierId || null,
       total,
       status: 'pending',
-      delivery_address: deliveryAddress || null,
-      delivery_contact_num: deliveryContactNum || null,
+      address: deliveryAddress || null,
+      contact_num: deliveryContactNum || null,
     })
     .select()
     .single();

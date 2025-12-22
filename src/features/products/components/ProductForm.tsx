@@ -55,12 +55,16 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
   const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
     queryFn: getCategories,
+    refetchOnWindowFocus: false,
+    staleTime: 300000, // Categories don't change often - 5 minutes
   });
 
   const { data: productData } = useQuery({
     queryKey: ['product', productId],
     queryFn: () => getProduct(productId!),
     enabled: !!productId,
+    refetchOnWindowFocus: true,
+    staleTime: 30000, // Consider data fresh for 30 seconds
   });
 
   useEffect(() => {

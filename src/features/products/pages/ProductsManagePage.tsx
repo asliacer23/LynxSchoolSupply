@@ -31,6 +31,9 @@ export default function ProductsManagePage() {
     queryKey: ['admin-products'],
     queryFn: () => getAllProducts(roles),
     enabled: !!user && isAdmin(),
+    refetchOnWindowFocus: true,
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    refetchInterval: 60000, // Refetch every 60 seconds
   });
 
   const deleteProductMutation = useMutation({

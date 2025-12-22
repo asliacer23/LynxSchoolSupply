@@ -29,7 +29,8 @@ export default function OrdersPage() {
     queryFn: () => getUserOrders(user!.id, user!.id, roles),
     enabled: !!user,
     refetchOnWindowFocus: true,
-    staleTime: 30000, // Consider data fresh for 30 seconds
+    staleTime: 15000, // Consider data fresh for 15 seconds
+    refetchInterval: 30000, // Automatically refetch every 30 seconds
   });
 
   const orders = data?.data ?? [];
