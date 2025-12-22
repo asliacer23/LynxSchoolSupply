@@ -183,6 +183,13 @@ export function useAuth() {
     return { error };
   };
 
+  // Refresh profile data - useful for updating after changes
+  const refreshProfile = async () => {
+    if (state.user) {
+      await fetchUserData(state.user.id);
+    }
+  };
+
   // Role checking functions
   const hasRole = (role: RoleName) => state.roles.includes(role);
   const isAdmin = () => hasRole('superadmin') || hasRole('owner');
@@ -195,6 +202,7 @@ export function useAuth() {
     signIn,
     signUp,
     signOut,
+    refreshProfile,
     hasRole,
     isAdmin,
     isCashier,

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { Cart, CartItem, Product } from '@/types/database';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
 import { getUserCart, addItemToCart, updateCartItemQuantity, removeCartItem, clearCart as clearCartService } from '@/features/cart/services/cart.service';
 import { getPrimaryImageUrl } from '@/lib/shared-services/imageService';
 
@@ -50,10 +51,27 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [refreshCart]);
 
   const addToCart = useCallback(async (productId: string, quantity: number = 1) => {
-    if (!cart) return;
-    await addItemToCart(cart.id, productId, quantity);
+    if (!user) return;
+
+    // If cart doesn't exist, create one first
+    if (!cart) {
+      const { data: newCart } = await supabase
+        .from('carts')
+        .insert({ user_id: user.id, status: 'active' })
+        .select()
+        .single();
+
+      if (!newCart) return;
+
+      // Add item to the newly created cart
+      await addItemToCart(newCart.id, productId, quantity);
+    } else {
+      // Add item to existing cart
+      await addItemToCart(cart.id, productId, quantity);
+    }
+
     await refreshCart();
-  }, [cart, refreshCart]);
+  }, [user, cart, refreshCart]);
 
   const updateQuantity = useCallback(async (itemId: string, quantity: number) => {
     await updateCartItemQuantity(itemId, quantity);

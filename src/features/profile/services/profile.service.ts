@@ -1,12 +1,39 @@
 import { supabase } from '@/lib/supabase';
+import { canAccess } from '@/lib/authorization';
+import type { RoleName } from '@/types/database';
 
-export async function updateProfile(userId: string, updates: {
-  full_name?: string;
-  email?: string;
-  avatar_url?: string;
-  address?: string;
-}) {
+/**
+ * Update a user's profile
+ * Requires either:
+ * - edit_profile permission (for admins to edit any profile)
+ * - edit_own_profile permission (for regular users to edit their own profile)
+ */
+export async function updateProfile(
+  userId: string, 
+  updates: {
+    full_name?: string;
+    email?: string;
+    avatar_url?: string;
+    address?: string;
+  },
+  currentUserId?: string,
+  userRoles?: RoleName[]
+) {
   try {
+    // Authorization check
+    if (currentUserId && userRoles) {
+      const canEditAnyProfile = canAccess(userRoles, 'edit_profile');
+      const canEditOwnProfile = canAccess(userRoles, 'edit_own_profile');
+      
+      // Check if user has permission to edit this profile
+      if (!canEditAnyProfile && !(canEditOwnProfile && currentUserId === userId)) {
+        return { 
+          success: false, 
+          error: new Error('You do not have permission to edit this profile') 
+        };
+      }
+    }
+
     const { data, error } = await supabase
       .from('profiles')
       .update(updates)

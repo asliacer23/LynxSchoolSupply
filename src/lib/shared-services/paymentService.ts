@@ -14,6 +14,7 @@ export interface PaymentInput {
 /**
  * Create a new payment
  * Shared by: cashier, orders
+ * When payment is created with 'completed' status, auto-complete POS orders
  */
 export async function createPayment(paymentData: PaymentInput, userId?: string) {
   const { data, error } = await supabase
@@ -44,12 +45,34 @@ export async function createPayment(paymentData: PaymentInput, userId?: string) 
     });
   }
 
+  // Auto-complete POS orders when payment is created as 'completed'
+  if (data && paymentData.status === 'completed') {
+    const order = await supabase
+      .from('orders')
+      .select('user_id, cashier_id, status')
+      .eq('id', paymentData.order_id)
+      .maybeSingle();
+
+    // POS orders have cashier_id set and no user_id (walk-in customers)
+    if (order.data?.cashier_id && !order.data?.user_id && order.data?.status === 'pending') {
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({ status: 'completed' })
+        .eq('id', paymentData.order_id);
+
+      if (updateError) {
+        console.error('Error auto-completing POS order:', updateError);
+      }
+    }
+  }
+
   return { data, error: null };
 }
 
 /**
  * Update payment status
  * Shared by: cashier, orders, dashboard
+ * When payment is completed, auto-complete POS orders (face-to-face transactions)
  */
 export async function updatePaymentStatus(paymentId: string, status: 'completed' | 'failed' | 'pending', userId?: string) {
   const { data, error } = await supabase
@@ -74,19 +97,34 @@ export async function updatePaymentStatus(paymentId: string, status: 'completed'
     // Send notification based on payment status
     const order = await supabase
       .from('orders')
-      .select('user_id')
+      .select('user_id, cashier_id')
       .eq('id', data.order_id)
       .maybeSingle();
     
-    if (order.data?.user_id && data.amount) {
-      if (status === 'completed') {
+    if (status === 'completed') {
+      // Auto-complete POS orders (face-to-face transactions)
+      // POS orders have cashier_id set and no user_id (walk-in customers)
+      if (order.data?.cashier_id && !order.data?.user_id) {
+        const { error: updateError } = await supabase
+          .from('orders')
+          .update({ status: 'completed' })
+          .eq('id', data.order_id);
+        
+        if (updateError) {
+          console.error('Error auto-completing POS order:', updateError);
+        }
+      }
+
+      if (order.data?.user_id && data.amount) {
         await triggerPaymentCompletedNotification(
           order.data.user_id,
           data.order_id,
           data.amount,
           data.method || 'Unknown'
         );
-      } else if (status === 'failed') {
+      }
+    } else if (status === 'failed') {
+      if (order.data?.user_id && data.amount) {
         await triggerPaymentFailedNotification(
           order.data.user_id,
           data.order_id,

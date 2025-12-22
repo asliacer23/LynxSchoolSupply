@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, Moon, Sun, LogOut, LayoutDashboard, Package, CreditCard, ShoppingBag, FileText, Trash2, Edit2 } from 'lucide-react';
+import { ShoppingCart, User, Moon, Sun, LogOut, LayoutDashboard, Package, CreditCard, ShoppingBag, FileText, Trash2, Edit2, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -14,6 +14,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { NotificationDropdown } from '@/features/notifications/components/NotificationDropdown';
 import { EditProfileModal } from '@/features/profile/components/EditProfileModal';
+import { AddressModal } from '@/features/address/components/AddressModal';
 import { getRoleDisplayName } from '@/lib/permissions';
 import logoDark from '@/components/images/White Transparent Logo.png';
 import logoLight from '@/components/images/Black Transparent Logo.png';
@@ -25,7 +26,8 @@ interface HeaderProps {
 
 export function Header({ cartCount = 0, onCartClick }: HeaderProps) {
   const [editProfileOpen, setEditProfileOpen] = useState(false);
-  const { user, profile, roles, hasRole, signOut } = useAuth();
+  const [addressModalOpen, setAddressModalOpen] = useState(false);
+  const { user, profile, roles, hasRole, signOut, refreshProfile } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -123,6 +125,11 @@ export function Header({ cartCount = 0, onCartClick }: HeaderProps) {
                 <Edit2 className="mr-2 h-4 w-4" />
                 Edit Profile
               </DropdownMenuItem>
+
+              <DropdownMenuItem onClick={() => setAddressModalOpen(true)}>
+                <MapPin className="mr-2 h-4 w-4" />
+                {profile?.address ? 'Edit Address' : 'Add Address'}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
 
               {isSuperadmin && <>
@@ -163,6 +170,19 @@ export function Header({ cartCount = 0, onCartClick }: HeaderProps) {
           onOpenChange={setEditProfileOpen}
           profile={profile}
           userId={user.id}
+          currentUserId={user.id}
+          userRoles={roles}
+          onProfileUpdated={() => refreshProfile()}
+        />
+      )}
+
+      {user && profile && (
+        <AddressModal
+          open={addressModalOpen}
+          onOpenChange={setAddressModalOpen}
+          profile={profile}
+          userId={user.id}
+          onAddressUpdated={() => refreshProfile()}
         />
       )}
     </header>

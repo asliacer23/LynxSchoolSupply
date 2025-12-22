@@ -9,12 +9,17 @@ import { triggerOrderCreatedNotification, triggerOrderStatusNotification } from 
  * @param cartItems - Array of items to order
  * @param cashierId - Cashier ID (for POS orders)
  * @param userRoles - User roles for authorization
+ * @param deliveryAddress - Delivery address for the order
+ * @param deliveryContactNum - Contact number for delivery
  */
 export async function createOrder(
   userId: string | null,
   cartItems: Array<{ product_id: string; quantity: number }>,
   cashierId?: string,
-  userRoles: string[] = []
+  userRoles: string[] = [],
+  _unused?: string,
+  deliveryAddress?: string,
+  deliveryContactNum?: string
 ) {
   const { data: order, error: orderError } = await supabase
     .from('orders')
@@ -23,6 +28,8 @@ export async function createOrder(
       cashier_id: cashierId,
       status: 'pending',
       total: 0,
+      delivery_address: deliveryAddress || null,
+      delivery_contact_num: deliveryContactNum || null,
     })
     .select()
     .single();
@@ -48,18 +55,29 @@ export async function createOrder(
     return { data: null, error: itemsError };
   }
 
-  // Fetch product prices and calculate total
+  // Fetch product prices, calculate total, and deduct stock
   let total = 0;
   for (const item of cartItems) {
     const { data: product } = await supabase
       .from('products')
-      .select('price')
+      .select('price, stock')
       .eq('id', item.product_id)
       .single();
 
     if (product) {
       const itemTotal = product.price * item.quantity;
       total += itemTotal;
+
+      // Deduct stock from inventory
+      const newStock = Math.max(0, (product.stock || 0) - item.quantity);
+      const { error: stockError } = await supabase
+        .from('products')
+        .update({ stock: newStock })
+        .eq('id', item.product_id);
+
+      if (stockError) {
+        console.error(`Error updating stock for product ${item.product_id}:`, stockError);
+      }
     }
   }
 

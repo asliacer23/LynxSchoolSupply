@@ -28,6 +28,8 @@ export default function OrdersPage() {
     queryKey: ['orders', user?.id],
     queryFn: () => getUserOrders(user!.id, user!.id, roles),
     enabled: !!user,
+    refetchOnWindowFocus: true,
+    staleTime: 30000, // Consider data fresh for 30 seconds
   });
 
   const orders = data?.data ?? [];

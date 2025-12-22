@@ -31,6 +31,8 @@ const rolePermissions: Record<RoleName, Permission[]> = {
     'manage_users',
     'access_admin_panel',
     'view_audit_logs',
+    'edit_profile',
+    'edit_own_profile',
   ],
   owner: [
     'view_products',
@@ -49,6 +51,8 @@ const rolePermissions: Record<RoleName, Permission[]> = {
     'manage_users',
     'access_admin_panel',
     'view_audit_logs',
+    'edit_profile',
+    'edit_own_profile',
   ],
   cashier: [
     'view_products',
@@ -56,6 +60,7 @@ const rolePermissions: Record<RoleName, Permission[]> = {
     'view_own_orders', // Cashier can only see their own sales
     'create_order',
     'view_dashboard', // Cashier-specific dashboard (sales only)
+    'edit_own_profile',
   ],
   user: [
     'view_products',
@@ -64,6 +69,7 @@ const rolePermissions: Record<RoleName, Permission[]> = {
     'checkout',
     'view_own_orders',
     'create_order',
+    'edit_own_profile',
   ],
 };
 

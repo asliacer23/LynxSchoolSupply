@@ -13,13 +13,15 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { updateProfile } from '../services/profile.service';
-import type { Profile } from '@/types/database';
+import type { Profile, RoleName } from '@/types/database';
 
 interface EditProfileModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   profile: Profile | null;
   userId: string;
+  currentUserId?: string;
+  userRoles?: RoleName[];
   onProfileUpdated?: (profile: Profile) => void;
 }
 
@@ -28,6 +30,8 @@ export function EditProfileModal({
   onOpenChange,
   profile,
   userId,
+  currentUserId,
+  userRoles,
   onProfileUpdated,
 }: EditProfileModalProps) {
   const [loading, setLoading] = useState(false);
@@ -47,9 +51,12 @@ export function EditProfileModal({
     }
 
     setLoading(true);
-    const { success, data, error } = await updateProfile(userId, {
-      full_name: fullName.trim(),
-    });
+    const { success, data, error } = await updateProfile(
+      userId,
+      { full_name: fullName.trim() },
+      currentUserId,
+      userRoles
+    );
     setLoading(false);
 
     if (!success) {

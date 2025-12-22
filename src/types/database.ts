@@ -17,6 +17,7 @@ export interface Profile {
   email: string | null;
   avatar_url: string | null;
   address: string | null;
+  contact_num: string | null;
   preferences: Record<string, unknown>;
   is_active: boolean;
   created_at: string;
@@ -95,6 +96,8 @@ export interface Order {
   cashier_id: string | null;
   status: 'pending' | 'processing' | 'completed' | 'cancelled';
   total: number;
+  delivery_address: string | null;
+  delivery_contact_num: string | null;
   created_at: string;
   updated_at: string;
   items?: OrderItem[];
@@ -176,4 +179,6 @@ export type Permission =
   | 'view_dashboard'
   | 'manage_users'
   | 'access_admin_panel'
-  | 'view_audit_logs';
+  | 'view_audit_logs'
+  | 'edit_profile'
+  | 'edit_own_profile';

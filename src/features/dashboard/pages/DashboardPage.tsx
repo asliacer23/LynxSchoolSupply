@@ -32,19 +32,19 @@ export default function DashboardPage() {
     }
   }, [user, authLoading, roles, navigate]);
 
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: () => getDashboardStats(roles),
     enabled: !!user && canAccess(roles, 'view_dashboard'),
   });
 
-  const { data: ordersData, isLoading: ordersLoading } = useQuery({
+  const { data: ordersData, isLoading: ordersLoading, refetch: refetchOrders } = useQuery({
     queryKey: ['all-orders'],
     queryFn: () => getAllOrders(roles, user?.id),
     enabled: !!user && canAccess(roles, 'view_all_orders'),
   });
 
-  const { data: productsData, isLoading: productsLoading } = useQuery({
+  const { data: productsData, isLoading: productsLoading, refetch: refetchProducts } = useQuery({
     queryKey: ['all-products'],
     queryFn: () => getAllProducts(roles),
     enabled: !!user && canAccess(roles, 'edit_product'),
@@ -62,6 +62,8 @@ export default function DashboardPage() {
     }
     queryClient.invalidateQueries({ queryKey: ['all-orders'] });
     queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+    await refetchOrders();
+    await refetchStats();
     toast({
       title: 'Status updated',
       description: 'Order status has been updated.',
