@@ -1,7 +1,8 @@
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Product } from '@/types/database';
 import { format } from 'date-fns';
+import { Check } from 'lucide-react';
 
 interface ReceiptProps {
   orderId: string;
@@ -15,71 +16,98 @@ interface ReceiptProps {
 }
 
 export function Receipt({ orderId, items, total, createdAt }: ReceiptProps) {
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
   return (
-    <Card className="bg-white text-black max-w-md mx-auto">
-      <CardHeader className="text-center pb-2">
-        <h2 className="text-2xl font-bold">LYNX SUPPLIES</h2>
-        <p className="text-xs text-muted-foreground">Sales Receipt</p>
-      </CardHeader>
-      <CardContent className="space-y-2 text-xs font-mono">
-        {/* Order Info */}
-        <div className="text-center">
-          <p>Order ID: {orderId.slice(0, 8).toUpperCase()}</p>
-          <p>Date: {format(new Date(createdAt), 'MMM dd, yyyy')}</p>
-          <p>Time: {format(new Date(createdAt), 'hh:mm a')}</p>
+    <div className="w-full max-w-xl mx-auto">
+      {/* Success Checkmark */}
+      <div className="flex justify-center mb-6 sm:mb-8">
+        <div className="relative">
+          <div className="absolute inset-0 bg-green-400 rounded-full blur-xl opacity-30"></div>
+          <div className="relative bg-white dark:bg-slate-900 border-2 border-green-500 rounded-full p-4">
+            <Check className="h-8 w-8 sm:h-10 sm:w-10 text-green-500" strokeWidth={3} />
+          </div>
         </div>
+      </div>
 
-        <Separator className="my-2" />
+      {/* Header */}
+      <div className="text-center mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Payment Successful</h1>
+        <p className="text-sm text-gray-600 dark:text-gray-400">Order confirmed and payment received</p>
+      </div>
 
-        {/* Items */}
-        <div className="space-y-1">
-          {items.map(item => (
-            <div key={item.productId}>
-              <div className="flex justify-between">
-                <span className="flex-1">{item.product.name}</span>
-                <span className="text-right">
-                  {item.quantity} x ₱{Number(item.product.price).toFixed(2)}
-                </span>
-              </div>
-              <div className="text-right text-muted-foreground">
-                ₱{(Number(item.product.price) * item.quantity).toFixed(2)}
-              </div>
+      {/* Receipt Card */}
+      <Card className="border-2 dark:border-gray-700">
+        <CardContent className="p-4 sm:p-6 space-y-4">
+          {/* Order Details */}
+          <div className="space-y-3 text-sm sm:text-base">
+            <div className="flex justify-between">
+              <span className="text-gray-600 dark:text-gray-400">Order ID</span>
+              <span className="font-mono font-bold">{orderId.slice(0, 8).toUpperCase()}</span>
             </div>
-          ))}
-        </div>
-
-        <Separator className="my-2" />
-
-        {/* Totals */}
-        <div className="space-y-1">
-          <div className="flex justify-between">
-            <span>Subtotal:</span>
-            <span>₱{total.toFixed(2)}</span>
+            <div className="flex justify-between">
+              <span className="text-gray-600 dark:text-gray-400">Date</span>
+              <span className="font-semibold">{format(new Date(createdAt), 'MMM dd, yyyy')}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600 dark:text-gray-400">Time</span>
+              <span className="font-semibold">{format(new Date(createdAt), 'hh:mm a')}</span>
+            </div>
           </div>
-          <div className="flex justify-between">
-            <span>Tax:</span>
-            <span>₱0.00</span>
+
+          <Separator className="dark:bg-gray-700" />
+
+          {/* Items */}
+          <div className="space-y-2">
+            <h3 className="font-semibold text-sm">Items ({itemCount})</h3>
+            <div className="space-y-2">
+              {items.map(item => (
+                <div key={item.productId} className="flex justify-between text-sm gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate">{item.product.name}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      {item.quantity} × ₱{Number(item.product.price).toFixed(2)}
+                    </p>
+                  </div>
+                  <p className="font-bold whitespace-nowrap">₱{(Number(item.product.price) * item.quantity).toFixed(2)}</p>
+                </div>
+              ))}
+            </div>
           </div>
-          <Separator className="my-1" />
-          <div className="flex justify-between font-bold text-sm">
-            <span>TOTAL:</span>
-            <span>₱{total.toFixed(2)}</span>
+
+          <Separator className="dark:bg-gray-700" />
+
+          {/* Summary */}
+          <div className="space-y-2 text-sm sm:text-base">
+            <div className="flex justify-between">
+              <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
+              <span>₱{total.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600 dark:text-gray-400">Tax</span>
+              <span>₱0.00</span>
+            </div>
           </div>
-        </div>
 
-        <Separator className="my-2" />
+          <Separator className="dark:bg-gray-700" />
 
-        {/* Footer */}
-        <div className="text-center text-muted-foreground">
-          <p>Thank you for your purchase!</p>
-          <p className="mt-1">Please come again</p>
-        </div>
+          {/* Total */}
+          <div className="flex justify-between items-center pt-2">
+            <span className="text-base sm:text-lg font-bold">TOTAL</span>
+            <span className="text-2xl sm:text-3xl font-bold">₱{total.toFixed(2)}</span>
+          </div>
 
-        {/* Print Instructions */}
-        <div className="text-center text-xs mt-4 print:hidden">
-          <p className="text-muted-foreground">Click "Print Receipt" to print</p>
-        </div>
-      </CardContent>
+          {/* Status Badge */}
+          <div className="bg-black dark:bg-white/10 text-white dark:text-gray-300 rounded text-center py-2 text-sm font-semibold">
+            ✓ Paid in Full
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Footer Message */}
+      <div className="text-center mt-6 text-xs sm:text-sm text-gray-600 dark:text-gray-400 print:hidden">
+        <p>Click "Print Receipt" to print this receipt</p>
+      </div>
 
       {/* Print Styles */}
       <style>{`
@@ -87,12 +115,13 @@ export function Receipt({ orderId, items, total, createdAt }: ReceiptProps) {
           body {
             margin: 0;
             padding: 0;
+            background: white;
           }
           .print\\:hidden {
             display: none !important;
           }
         }
       `}</style>
-    </Card>
+    </div>
   );
 }
