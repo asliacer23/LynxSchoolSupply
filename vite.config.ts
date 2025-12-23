@@ -3,13 +3,28 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
+// SPA Fallback Middleware for development
+const spaFallbackPlugin = {
+  name: 'spa-fallback',
+  configureServer(server: any) {
+    return () => {
+      server.middlewares.use((req: any, res: any, next: any) => {
+        if (req.method === 'GET' && !req.url.match(/\.(js|css|jpg|jpeg|png|gif|svg|ico|json|woff|woff2|ttf|eot)(\?|$)/) && !req.url.startsWith('/api')) {
+          req.url = '/index.html';
+        }
+        next();
+      });
+    };
+  },
+};
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [react(), spaFallbackPlugin, mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
