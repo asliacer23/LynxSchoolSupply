@@ -23,6 +23,7 @@ import NotificationsPage from "@/features/notifications/pages/NotificationsPage"
 import PaymentHistoryPage from "@/features/payments/pages/PaymentHistoryPage";
 import POSPage from "@/features/orders/pages/POSPage";
 import AuditLogsPage from "@/features/audit-logs/pages/AuditLogsPage";
+import AddressesPage from "@/features/address/pages/AddressesPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -161,6 +162,20 @@ const App = () => {
                   }}
                 >
                   <NotificationsPage />
+                </ProtectedRoute>
+              } 
+            />
+
+            {/* Addresses - authenticated users only */}
+            <Route 
+              path="/addresses" 
+              element={
+                <ProtectedRoute 
+                  config={{ 
+                    requireAuth: true
+                  }}
+                >
+                  <AddressesPage />
                 </ProtectedRoute>
               } 
             />

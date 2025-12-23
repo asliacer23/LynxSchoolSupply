@@ -11,9 +11,7 @@ export async function createOrder(
   cartItems: CartItem[],
   currentUserId: string,
   userRoles: RoleName[],
-  cashierId?: string,
-  deliveryAddress?: string,
-  deliveryContactNum?: string
+  cashierId?: string
 ) {
   // Authorization check
   if (!canAccess(userRoles, 'create_order')) {
@@ -36,8 +34,6 @@ export async function createOrder(
       cashier_id: cashierId || null,
       total,
       status: 'pending',
-      address: deliveryAddress || null,
-      contact_num: deliveryContactNum || null,
     })
     .select()
     .single();

@@ -1,4 +1,5 @@
 import { Bell, Trash2, Check } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -138,9 +139,9 @@ export function NotificationDropdown() {
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild className="justify-center cursor-pointer">
-              <a href="/notifications" className="text-center text-xs text-primary hover:underline">
+              <Link to="/notifications" className="text-center text-xs text-primary hover:underline">
                 View all notifications
-              </a>
+              </Link>
             </DropdownMenuItem>
           </>
         )}

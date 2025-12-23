@@ -14,7 +14,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { NotificationDropdown } from '@/features/notifications/components/NotificationDropdown';
 import { EditProfileModal } from '@/features/profile/components/EditProfileModal';
-import { AddressEditor } from '@/features/address/components/AddressEditor';
 import { getRoleDisplayName } from '@/lib/permissions';
 import logoDark from '@/components/images/White Transparent Logo.png';
 import logoLight from '@/components/images/Black Transparent Logo.png';
@@ -26,7 +25,6 @@ interface HeaderProps {
 
 export function Header({ cartCount = 0, onCartClick }: HeaderProps) {
   const [editProfileOpen, setEditProfileOpen] = useState(false);
-  const [addressEditorOpen, setAddressEditorOpen] = useState(false);
   const { user, profile, roles, hasRole, signOut, refreshProfile } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -126,9 +124,9 @@ export function Header({ cartCount = 0, onCartClick }: HeaderProps) {
                 Edit Profile
               </DropdownMenuItem>
 
-              <DropdownMenuItem onClick={() => setAddressEditorOpen(true)}>
+              <DropdownMenuItem onClick={() => navigate('/addresses')}>
                 <MapPin className="mr-2 h-4 w-4" />
-                {profile?.address ? 'Edit Address' : 'Add Address'}
+                Manage Addresses
               </DropdownMenuItem>
               <DropdownMenuSeparator />
 
@@ -173,17 +171,6 @@ export function Header({ cartCount = 0, onCartClick }: HeaderProps) {
           currentUserId={user.id}
           userRoles={roles}
           onProfileUpdated={() => refreshProfile()}
-        />
-      )}
-
-      {user && profile && (
-        <AddressEditor
-          isOpen={addressEditorOpen}
-          onOpenChange={setAddressEditorOpen}
-          userId={user.id}
-          currentAddress={profile.address}
-          currentContactNum={profile.contact_num}
-          onSuccess={() => refreshProfile()}
         />
       )}
     </header>

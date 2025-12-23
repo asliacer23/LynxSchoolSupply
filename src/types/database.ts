@@ -16,10 +16,26 @@ export interface Profile {
   full_name: string | null;
   email: string | null;
   avatar_url: string | null;
-  address: string | null;
-  contact_num: string | null;
   preferences: Record<string, unknown>;
   is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  addresses?: UserAddress[];
+}
+
+export interface UserAddress {
+  id: string;
+  user_id: string;
+  label: string | null;
+  recipient_name: string | null;
+  contact_num: string | null;
+  address_line1: string;
+  address_line2: string | null;
+  city: string;
+  state: string | null;
+  postal_code: string | null;
+  country: string;
+  is_default: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -96,9 +112,12 @@ export interface Order {
   cashier_id: string | null;
   status: 'pending' | 'processing' | 'completed' | 'cancelled';
   total: number;
+  shipping_address: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
   items?: OrderItem[];
+  user?: Profile;
+  cashier?: Profile;
 }
 
 export interface OrderItem {

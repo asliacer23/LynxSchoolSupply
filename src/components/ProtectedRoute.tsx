@@ -30,8 +30,18 @@ export function ProtectedRoute({
     );
   }
 
+  // Log route access attempt for debugging
+  console.log(`📍 Route access attempt:`, {
+    path: window.location.pathname,
+    isAuthenticated,
+    roles,
+    isCashier,
+    config,
+  });
+
   // Redirect cashiers to POS system - they can only access /cashier/pos
   if (isCashier && !window.location.pathname.startsWith('/cashier/pos')) {
+    console.warn(`🚫 Cashier redirected from ${window.location.pathname} to /cashier/pos`);
     return <Navigate to="/cashier/pos" replace />;
   }
 
@@ -40,15 +50,18 @@ export function ProtectedRoute({
   if (!accessCheck.allowed) {
     // Redirect to login if not authenticated
     if (!isAuthenticated && config.requireAuth) {
+      console.warn(`🔐 Redirecting to login - requires authentication`);
       return <Navigate to={fallbackPath} replace />;
     }
 
     // Redirect cashiers to POS if they don't have permission
     if (isCashier) {
+      console.warn(`🚫 Cashier denied access - redirecting to POS`);
       return <Navigate to="/cashier/pos" replace />;
     }
 
     // Show access denied for authenticated users without permission
+    console.error(`❌ Access denied:`, accessCheck.reason);
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -65,5 +78,6 @@ export function ProtectedRoute({
     );
   }
 
+  console.log(`✅ Access granted to ${window.location.pathname}`);
   return <>{children}</>;
 }

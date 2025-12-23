@@ -16,7 +16,10 @@ export async function createOrder(
   userId: string | null,
   cartItems: Array<{ product_id: string; quantity: number }>,
   cashierId?: string,
-  userRoles: string[] = []
+  userRoles: string[] = [],
+  orderData?: {
+    shipping_address?: Record<string, unknown>;
+  }
 ) {
   const { data: order, error: orderError } = await supabase
     .from('orders')
@@ -25,6 +28,7 @@ export async function createOrder(
       cashier_id: cashierId,
       status: 'pending',
       total: 0,
+      shipping_address: orderData?.shipping_address || null,
     })
     .select()
     .single();

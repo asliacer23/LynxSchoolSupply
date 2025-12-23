@@ -1,21 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, Loader2, CheckCircle, Package, AlertCircle } from 'lucide-react';
+import { ShoppingBag, Loader2, CheckCircle, Package, AlertCircle, MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useCartContext } from '@/contexts/CartContext';
 import { useToast } from '@/hooks/use-toast';
 import { createOrder } from '@/lib/shared-services/orderService';
 import { getPrimaryImageUrl } from '@/lib/shared-services/imageService';
 import { validateOrder } from '@/lib/cart-validation';
+import { getUserAddresses, getDefaultAddress, UserAddress } from '@/features/address/services/address.service';
 
 export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [addresses, setAddresses] = useState<UserAddress[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [loadingAddresses, setLoadingAddresses] = useState(true);
   const { user, profile, roles, loading: authLoading } = useAuth();
   const { items, total, clearCart } = useCartContext();
   const navigate = useNavigate();
@@ -26,6 +31,29 @@ export default function CheckoutPage() {
       navigate('/auth/login');
     }
   }, [user, authLoading, navigate]);
+
+  // Load user addresses
+  useEffect(() => {
+    if (user && !authLoading) {
+      loadUserAddresses();
+    }
+  }, [user, authLoading]);
+
+  const loadUserAddresses = async () => {
+    setLoadingAddresses(true);
+    const result = await getUserAddresses(user!.id);
+    if (result.success && result.data.length > 0) {
+      setAddresses(result.data);
+      // Auto-select default address
+      const defaultAddr = result.data.find(a => a.is_default);
+      if (defaultAddr) {
+        setSelectedAddressId(defaultAddr.id);
+      } else {
+        setSelectedAddressId(result.data[0].id);
+      }
+    }
+    setLoadingAddresses(false);
+  };
 
   useEffect(() => {
     if (!authLoading && user && items.length === 0 && !success) {
@@ -46,12 +74,23 @@ export default function CheckoutPage() {
   const handlePlaceOrder = async () => {
     if (!user) return;
 
-    // Check if address and contact are available
-    if (!profile?.address || !profile?.contact_num) {
+    // Check if address is selected
+    if (!selectedAddressId || addresses.length === 0) {
       toast({
         variant: 'destructive',
         title: 'Delivery address required',
-        description: 'Please update your delivery address and contact number in your profile',
+        description: 'Please add a delivery address to your account',
+      });
+      navigate('/addresses');
+      return;
+    }
+
+    const selectedAddress = addresses.find(a => a.id === selectedAddressId);
+    if (!selectedAddress) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid address',
+        description: 'Please select a valid delivery address',
       });
       return;
     }
@@ -72,7 +111,20 @@ export default function CheckoutPage() {
       user.id, 
       items, 
       user.id, 
-      roles
+      roles,
+      {
+        // Include shipping address from selected address
+        shipping_address: {
+          recipient_name: selectedAddress.recipient_name,
+          address_line1: selectedAddress.address_line1,
+          address_line2: selectedAddress.address_line2,
+          city: selectedAddress.city,
+          state: selectedAddress.state,
+          postal_code: selectedAddress.postal_code,
+          country: selectedAddress.country,
+          contact_num: selectedAddress.contact_num,
+        },
+      }
     );
     setLoading(false);
 
@@ -197,15 +249,60 @@ export default function CheckoutPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Delivery Address */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <h4 className="font-medium text-sm">Delivery Address</h4>
-                {profile?.address ? (
-                  <div className="text-sm space-y-1">
-                    <p className="text-muted-foreground">{profile.address}</p>
-                    <p className="text-muted-foreground text-xs">Contact: {profile.contact_num}</p>
+                {loadingAddresses ? (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                ) : addresses.length > 0 ? (
+                  <div className="space-y-2">
+                    {addresses.map(address => (
+                      <div
+                        key={address.id}
+                        onClick={() => setSelectedAddressId(address.id)}
+                        className={`p-3 rounded-lg border-2 cursor-pointer transition-colors ${
+                          selectedAddressId === address.id
+                            ? 'border-primary bg-primary/5'
+                            : 'border-muted hover:border-muted-foreground'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 text-sm">
+                            {address.label && (
+                              <p className="font-medium text-xs text-muted-foreground mb-1">{address.label}</p>
+                            )}
+                            {address.recipient_name && (
+                              <p className="font-medium text-sm">{address.recipient_name}</p>
+                            )}
+                            <p className="text-xs text-muted-foreground">{address.address_line1}</p>
+                            {address.address_line2 && (
+                              <p className="text-xs text-muted-foreground">{address.address_line2}</p>
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                              {address.city} {address.postal_code}
+                            </p>
+                          </div>
+                          {address.is_default && (
+                            <Badge className="ml-2" variant="secondary">Default</Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-destructive">Please update your profile with address</p>
+                  <div className="text-sm space-y-2">
+                    <p className="text-destructive font-medium">No addresses found</p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate('/addresses')}
+                      className="w-full"
+                    >
+                      <MapPin className="h-4 w-4 mr-2" />
+                      Add Address
+                    </Button>
+                  </div>
                 )}
               </div>
 
@@ -237,8 +334,8 @@ export default function CheckoutPage() {
                   loading ||
                   items.length === 0 || 
                   validationError !== null ||
-                  !profile?.address ||
-                  !profile?.contact_num
+                  !selectedAddressId ||
+                  addresses.length === 0
                 }
                 onClick={handlePlaceOrder}
               >
