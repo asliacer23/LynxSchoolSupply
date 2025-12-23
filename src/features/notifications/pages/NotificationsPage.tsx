@@ -1,15 +1,22 @@
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Trash2, Check, Bell } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useNotifications, useMarkAsRead, useDeleteNotification, useMarkAllAsRead, useDeleteAllRead } from '../hooks/useNotifications';
+import {
+  useNotifications,
+  useMarkAsRead,
+  useDeleteNotification,
+  useMarkAllAsRead,
+  useDeleteAllRead,
+} from '../hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function NotificationsPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { data: notificationsData, isLoading } = useNotifications(100);
+
   const markAsReadMutation = useMarkAsRead();
   const deleteNotificationMutation = useDeleteNotification();
   const markAllAsReadMutation = useMarkAllAsRead();
@@ -17,7 +24,7 @@ export default function NotificationsPage() {
 
   if (authLoading) {
     return (
-      <div className="container py-16 flex justify-center">
+      <div className="flex justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -29,46 +36,32 @@ export default function NotificationsPage() {
   }
 
   const notifications = notificationsData?.data ?? [];
-  const unreadNotifications = notifications.filter(n => !n.is_read);
-  const readNotifications = notifications.filter(n => n.is_read);
-
-  const handleMarkAsRead = (notificationId: string, isRead: boolean) => {
-    if (!isRead) {
-      markAsReadMutation.mutate(notificationId);
-    }
-  };
-
-  const handleDelete = (notificationId: string) => {
-    deleteNotificationMutation.mutate(notificationId);
-  };
-
-  const handleMarkAllAsRead = () => {
-    markAllAsReadMutation.mutate();
-  };
-
-  const handleDeleteAllRead = () => {
-    deleteAllReadMutation.mutate();
-  };
+  const unread = notifications.filter(n => !n.is_read);
+  const read = notifications.filter(n => n.is_read);
 
   return (
-    <div className="container py-8">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold">Notifications</h1>
-        <div className="flex gap-2">
-          {unreadNotifications.length > 0 && (
+    <div className="mx-auto max-w-4xl px-4 py-6 sm:py-8">
+      {/* Header */}
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold sm:text-3xl">Notifications</h1>
+
+        <div className="flex flex-wrap gap-2">
+          {unread.length > 0 && (
             <Button
               variant="outline"
-              onClick={handleMarkAllAsRead}
+              onClick={() => markAllAsReadMutation.mutate()}
               disabled={markAllAsReadMutation.isPending}
+              className="w-full sm:w-auto"
             >
               Mark all as read
             </Button>
           )}
-          {readNotifications.length > 0 && (
+          {read.length > 0 && (
             <Button
               variant="outline"
-              onClick={handleDeleteAllRead}
+              onClick={() => deleteAllReadMutation.mutate()}
               disabled={deleteAllReadMutation.isPending}
+              className="w-full sm:w-auto"
             >
               Clear read
             </Button>
@@ -76,63 +69,49 @@ export default function NotificationsPage() {
         </div>
       </div>
 
+      {/* Content */}
       {isLoading ? (
-        <div className="flex justify-center py-16">
+        <div className="flex justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       ) : notifications.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center">
-            <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <p className="text-muted-foreground text-lg">No notifications yet</p>
-            <p className="text-muted-foreground text-sm mt-2">
-              Notifications will appear here when there are updates about your orders and account
+            <Bell className="mx-auto mb-4 h-12 w-12 opacity-50 text-muted-foreground" />
+            <p className="text-lg text-muted-foreground">No notifications yet</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              You’ll see updates about your account and orders here.
             </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {/* Unread Notifications */}
-          {unreadNotifications.length > 0 && (
-            <div>
-              <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-blue-500" />
-                Unread ({unreadNotifications.length})
-              </h2>
-              <div className="space-y-2">
-                {unreadNotifications.map(notification => (
-                  <NotificationCard
-                    key={notification.id}
-                    notification={notification}
-                    onMarkAsRead={handleMarkAsRead}
-                    onDelete={handleDelete}
-                    isMarkingAsRead={markAsReadMutation.isPending}
-                    isDeleting={deleteNotificationMutation.isPending}
-                  />
-                ))}
-              </div>
-            </div>
+        <div className="space-y-6">
+          {unread.length > 0 && (
+            <Section title={`Unread (${unread.length})`} dot>
+              {unread.map(n => (
+                <NotificationCard
+                  key={n.id}
+                  notification={n}
+                  onMarkAsRead={() => markAsReadMutation.mutate(n.id)}
+                  onDelete={() => deleteNotificationMutation.mutate(n.id)}
+                  isMarking={markAsReadMutation.isPending}
+                  isDeleting={deleteNotificationMutation.isPending}
+                />
+              ))}
+            </Section>
           )}
 
-          {/* Read Notifications */}
-          {readNotifications.length > 0 && (
-            <div>
-              <h2 className="text-lg font-semibold mb-3 text-muted-foreground">
-                Read ({readNotifications.length})
-              </h2>
-              <div className="space-y-2">
-                {readNotifications.map(notification => (
-                  <NotificationCard
-                    key={notification.id}
-                    notification={notification}
-                    onMarkAsRead={handleMarkAsRead}
-                    onDelete={handleDelete}
-                    isMarkingAsRead={markAsReadMutation.isPending}
-                    isDeleting={deleteNotificationMutation.isPending}
-                  />
-                ))}
-              </div>
-            </div>
+          {read.length > 0 && (
+            <Section title={`Read (${read.length})`} muted>
+              {read.map(n => (
+                <NotificationCard
+                  key={n.id}
+                  notification={n}
+                  onDelete={() => deleteNotificationMutation.mutate(n.id)}
+                  isDeleting={deleteNotificationMutation.isPending}
+                />
+              ))}
+            </Section>
           )}
         </div>
       )}
@@ -140,35 +119,72 @@ export default function NotificationsPage() {
   );
 }
 
-interface NotificationCardProps {
-  notification: any;
-  onMarkAsRead: (id: string, isRead: boolean) => void;
-  onDelete: (id: string) => void;
-  isMarkingAsRead: boolean;
-  isDeleting: boolean;
+/* ----------------------------- Components ----------------------------- */
+
+function Section({
+  title,
+  dot,
+  muted,
+  children,
+}: {
+  title: string;
+  dot?: boolean;
+  muted?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-3">
+      <h2
+        className={`flex items-center gap-2 text-sm font-semibold ${
+          muted ? 'text-muted-foreground' : ''
+        }`}
+      >
+        {dot && <span className="h-2 w-2 rounded-full bg-blue-500" />}
+        {title}
+      </h2>
+      <div className="space-y-2">{children}</div>
+    </div>
+  );
 }
 
 function NotificationCard({
   notification,
   onMarkAsRead,
   onDelete,
-  isMarkingAsRead,
+  isMarking,
   isDeleting,
-}: NotificationCardProps) {
+}: {
+  notification: any;
+  onMarkAsRead?: () => void;
+  onDelete: () => void;
+  isMarking?: boolean;
+  isDeleting?: boolean;
+}) {
   return (
-    <Card className={!notification.is_read ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' : ''}>
+    <Card
+      className={
+        !notification.is_read
+          ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
+          : ''
+      }
+    >
       <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          {/* Content */}
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="mb-1 flex items-center gap-2">
               <h3 className="font-semibold">{notification.title}</h3>
               {!notification.is_read && (
-                <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full">
+                <span className="rounded-full bg-blue-500 px-2 py-0.5 text-xs text-white">
                   New
                 </span>
               )}
             </div>
-            <p className="text-sm text-muted-foreground mb-2">{notification.message}</p>
+
+            <p className="mb-2 text-sm text-muted-foreground">
+              {notification.message}
+            </p>
+
             <p className="text-xs text-muted-foreground">
               {formatDistanceToNow(new Date(notification.created_at), {
                 addSuffix: true,
@@ -176,27 +192,30 @@ function NotificationCard({
             </p>
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {!notification.is_read && (
+          {/* Actions */}
+          <div className="flex w-full gap-2 sm:w-auto sm:flex-col">
+            {!notification.is_read && onMarkAsRead && (
               <Button
-                variant="outline"
                 size="sm"
-                onClick={() => onMarkAsRead(notification.id, notification.is_read)}
-                disabled={isMarkingAsRead}
-                className="gap-2"
+                variant="outline"
+                onClick={onMarkAsRead}
+                disabled={isMarking}
+                className="w-full sm:w-auto"
               >
-                <Check className="h-4 w-4" />
-                Mark read
+                <Check className="mr-2 h-4 w-4 sm:mr-0" />
+                <span className="sm:hidden">Mark as read</span>
               </Button>
             )}
+
             <Button
-              variant="outline"
               size="sm"
-              onClick={() => onDelete(notification.id)}
+              variant="outline"
+              onClick={onDelete}
               disabled={isDeleting}
-              className="text-destructive hover:text-destructive"
+              className="w-full text-destructive sm:w-auto"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="mr-2 h-4 w-4 sm:mr-0" />
+              <span className="sm:hidden">Delete</span>
             </Button>
           </div>
         </div>
