@@ -198,4 +198,6 @@ export type Permission =
   | 'access_admin_panel'
   | 'view_audit_logs'
   | 'edit_profile'
-  | 'edit_own_profile';
+  | 'edit_own_profile'
+  | 'view_own_addresses'
+  | 'manage_own_addresses';

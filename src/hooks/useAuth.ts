@@ -75,18 +75,6 @@ export function useAuth() {
           .eq('user_id', userId),
       ]);
 
-      // Handle profile fetch errors
-      if (profileResult.error) {
-        console.error('❌ Profile fetch error:', profileResult.error);
-      }
-
-      // Handle roles fetch errors
-      if (rolesResult.error) {
-        console.error('❌ Roles fetch error:', rolesResult.error);
-        console.error('   Error code:', rolesResult.error.code);
-        console.error('   Error message:', rolesResult.error.message);
-      }
-
       const roles = (rolesResult.data ?? [])
         .map((r: any) => r.roles?.name)
         .filter(Boolean) as RoleName[];
@@ -105,7 +93,7 @@ export function useAuth() {
         console.log('✅ User roles loaded:', roles);
       }
     } catch (error) {
-      console.error('❌ Error fetching user data:', error);
+      console.error('Error fetching user data:', error);
       setState(prev => ({ ...prev, loading: false }));
     }
   };
@@ -195,13 +183,6 @@ export function useAuth() {
     return { error };
   };
 
-  // Refresh profile data - useful for updating after changes
-  const refreshProfile = async () => {
-    if (state.user) {
-      await fetchUserData(state.user.id);
-    }
-  };
-
   // Role checking functions
   const hasRole = (role: RoleName) => state.roles.includes(role);
   const isAdmin = () => hasRole('superadmin') || hasRole('owner');
@@ -214,7 +195,6 @@ export function useAuth() {
     signIn,
     signUp,
     signOut,
-    refreshProfile,
     hasRole,
     isAdmin,
     isCashier,

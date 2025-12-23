@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Package, ShoppingCart, DollarSign, AlertTriangle, Loader2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -24,6 +24,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState('orders');
 
   // Authorization check
   useEffect(() => {
@@ -129,12 +130,13 @@ export default function DashboardPage() {
       </div>
 
       {/* Tabs - shown based on permissions */}
-      <Tabs defaultValue={isSuperadmin ? "system" : "orders"} className="space-y-4">
-        <TabsList>
-          {isSuperadmin && <TabsTrigger value="system">System Overview</TabsTrigger>}
-          <TabsTrigger value="orders">Orders</TabsTrigger>
-          {canEditProducts && <TabsTrigger value="products">Products</TabsTrigger>}
-          {isSuperadmin && <TabsTrigger value="info">System Info</TabsTrigger>}
+      {/* Desktop Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 hidden md:block">
+        <TabsList className="flex w-full overflow-x-auto bg-muted p-1 rounded-lg">
+          {isSuperadmin && <TabsTrigger value="system" className="whitespace-nowrap">System Overview</TabsTrigger>}
+          <TabsTrigger value="orders" className="whitespace-nowrap">Orders</TabsTrigger>
+          {canEditProducts && <TabsTrigger value="products" className="whitespace-nowrap">Products</TabsTrigger>}
+          {isSuperadmin && <TabsTrigger value="info" className="whitespace-nowrap">System Info</TabsTrigger>}
         </TabsList>
 
         {/* System Overview Tab - superadmin only */}
@@ -145,7 +147,7 @@ export default function DashboardPage() {
                 <CardTitle>System Overview</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="p-4 border rounded-lg">
                     <p className="text-sm text-muted-foreground mb-1">Total Orders</p>
                     <p className="text-2xl font-bold">{stats?.totalOrders ?? 0}</p>
@@ -290,40 +292,233 @@ export default function DashboardPage() {
             </Card>
           </TabsContent>
         )}
+
+        {/* System Info Tab - superadmin only */}
+        {isSuperadmin && (
+          <TabsContent value="info">
+            <Card>
+              <CardHeader>
+                <CardTitle>System Information</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-1">Application</p>
+                    <p className="font-medium">LynxSchoolSupplies</p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-1">Current User</p>
+                    <p className="font-medium">{profile?.full_name || 'Unknown'}</p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-1">User Email</p>
+                    <p className="font-medium">{user?.email}</p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-1">Role</p>
+                    <p className="font-medium">{isSuperadmin ? 'System Administrator' : isAdmin() ? 'Business Owner' : 'Cashier'}</p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-1">Permissions</p>
+                    <p className="font-medium">Full System Access</p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-1">Last Visited</p>
+                    <p className="font-medium">{new Date().toLocaleDateString()}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
 
-      {/* System Info Section - superadmin only */}
-      {isSuperadmin && (
-        <div className="mt-8 p-6 border rounded-lg bg-muted/30">
-          <h2 className="text-lg font-semibold mb-4">System Information</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-            <div>
-              <p className="text-muted-foreground">Application</p>
-              <p className="font-medium">LynxSchoolSupplies</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Current User</p>
-              <p className="font-medium">{profile?.full_name || 'Unknown'}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">User Email</p>
-              <p className="font-medium">{user?.email}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Role</p>
-              <p className="font-medium">System Administrator</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Permissions</p>
-              <p className="font-medium">Full System Access</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Last Visited</p>
-              <p className="font-medium">{new Date().toLocaleDateString()}</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Mobile Navigation - Dropdown for mobile view */}
+      <div className="block md:hidden mb-6">
+        <Select value={activeTab} onValueChange={setActiveTab}>
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {isSuperadmin && <SelectItem value="system">System Overview</SelectItem>}
+            <SelectItem value="orders">Orders</SelectItem>
+            {canEditProducts && <SelectItem value="products">Products</SelectItem>}
+            {isSuperadmin && <SelectItem value="info">System Info</SelectItem>}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Mobile Content View */}
+      <div className="block md:hidden space-y-4">
+        {/* System Overview - Mobile */}
+        {isSuperadmin && activeTab === "system" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>System Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="p-3 border rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Total Orders</p>
+                  <p className="text-xl font-bold">{stats?.totalOrders ?? 0}</p>
+                </div>
+                <div className="p-3 border rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Total Revenue</p>
+                  <p className="text-xl font-bold">₱{(stats?.totalRevenue ?? 0).toFixed(2)}</p>
+                </div>
+                <div className="p-3 border rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Pending Orders</p>
+                  <p className="text-xl font-bold">{stats?.pendingOrders ?? 0}</p>
+                </div>
+                <div className="p-3 border rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Total Products</p>
+                  <p className="text-xl font-bold">{stats?.totalProducts ?? 0}</p>
+                </div>
+                <div className="p-3 border rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Low Stock Items</p>
+                  <p className="text-xl font-bold text-destructive">{stats?.lowStockProducts ?? 0}</p>
+                </div>
+                <div className="p-3 border rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Total Users</p>
+                  <p className="text-xl font-bold">{stats?.totalUsers ?? 0}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Orders - Mobile */}
+        {activeTab === "orders" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">{canViewAllOrders ? 'All Orders' : 'Your Orders'}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {ordersLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : orders.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground">No orders yet</p>
+              ) : (
+                <div className="space-y-3">
+                  {orders.slice(0, 10).map(order => (
+                    <div key={order.id} className="p-3 border rounded-lg space-y-2">
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="flex-1">
+                          <p className="font-medium text-sm truncate">Order #{order.id.substring(0, 8)}</p>
+                          <p className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <Badge variant="outline">₱{Number(order.total).toFixed(2)}</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Select value={order.status} onValueChange={status => handleStatusChange(order.id, status)}>
+                          <SelectTrigger className="w-24 h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="confirmed">Confirmed</SelectItem>
+                            <SelectItem value="shipped">Shipped</SelectItem>
+                            <SelectItem value="delivered">Delivered</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Products - Mobile */}
+        {canEditProducts && activeTab === "products" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Products Inventory</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {productsLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : products.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground">No products yet</p>
+              ) : (
+                <div className="space-y-3">
+                  {products.slice(0, 10).map(product => {
+                    const imageUrl = getPrimaryImageUrl(product);
+                    return (
+                      <div key={product.id} className="p-3 border rounded-lg space-y-2">
+                        <div className="flex gap-3">
+                          <div className="h-12 w-12 bg-muted rounded flex-shrink-0 flex items-center justify-center">
+                            {imageUrl ? (
+                              <img src={imageUrl} alt={product.name} className="object-cover w-full h-full rounded" />
+                            ) : (
+                              <Package className="h-5 w-5 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{product.name}</p>
+                            <p className="text-xs text-muted-foreground">₱{Number(product.price).toFixed(2)}</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 text-xs">
+                          <Badge variant={product.stock <= 5 ? 'destructive' : 'secondary'}>
+                            Stock: {product.stock}
+                          </Badge>
+                          <Badge variant={product.is_active ? 'default' : 'secondary'}>
+                            {product.is_active ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* System Info - Mobile */}
+        {isSuperadmin && activeTab === "info" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">System Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="p-3 border rounded-lg">
+                  <p className="text-xs text-muted-foreground">Application</p>
+                  <p className="font-medium text-sm">LynxSchoolSupplies</p>
+                </div>
+                <div className="p-3 border rounded-lg">
+                  <p className="text-xs text-muted-foreground">Current User</p>
+                  <p className="font-medium text-sm">{profile?.full_name || 'Unknown'}</p>
+                </div>
+                <div className="p-3 border rounded-lg">
+                  <p className="text-xs text-muted-foreground">User Email</p>
+                  <p className="font-medium text-sm break-all">{user?.email}</p>
+                </div>
+                <div className="p-3 border rounded-lg">
+                  <p className="text-xs text-muted-foreground">Role</p>
+                  <p className="font-medium text-sm">{isSuperadmin ? 'System Administrator' : isAdmin() ? 'Business Owner' : 'Cashier'}</p>
+                </div>
+                <div className="p-3 border rounded-lg">
+                  <p className="text-xs text-muted-foreground">Permissions</p>
+                  <p className="font-medium text-sm">Full System Access</p>
+                </div>
+                <div className="p-3 border rounded-lg">
+                  <p className="text-xs text-muted-foreground">Last Visited</p>
+                  <p className="font-medium text-sm">{new Date().toLocaleDateString()}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

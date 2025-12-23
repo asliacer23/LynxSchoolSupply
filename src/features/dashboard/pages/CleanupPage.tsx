@@ -110,8 +110,8 @@ export default function CleanupPage() {
   };
 
   return (
-    <div className="container py-8">
-      <div className="max-w-2xl">
+    <div className="container py-8 px-4 md:px-6">
+      <div className="w-full max-w-2xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Database Cleanup</h1>
           <p className="text-muted-foreground mt-2">Manage old audit logs and notifications</p>
@@ -137,7 +137,7 @@ export default function CleanupPage() {
               <p className="text-muted-foreground">Click Refresh to load statistics</p>
             ) : (
               <>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Audit logs (older than 30 days)</p>
                     <p className="text-2xl font-bold">{stats.auditLogsOlderThan30Days}</p>

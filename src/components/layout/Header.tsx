@@ -124,10 +124,12 @@ export function Header({ cartCount = 0, onCartClick }: HeaderProps) {
                 Edit Profile
               </DropdownMenuItem>
 
-              <DropdownMenuItem onClick={() => navigate('/addresses')}>
-                <MapPin className="mr-2 h-4 w-4" />
-                Manage Addresses
-              </DropdownMenuItem>
+              {!isStaff && (
+                <DropdownMenuItem onClick={() => navigate('/addresses')}>
+                  <MapPin className="mr-2 h-4 w-4" />
+                  Manage Addresses
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
 
               {isSuperadmin && <>

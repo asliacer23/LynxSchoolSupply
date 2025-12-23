@@ -91,7 +91,7 @@ export default function AuditLogsPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Total Logs</CardTitle>
+              <CardTitle className="text-sm font-medium text-foreground/70">Total Logs</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalCount}</div>
@@ -101,7 +101,7 @@ export default function AuditLogsPage() {
           {Object.entries(summary).slice(0, 3).map(([action, count]) => (
             <Card key={action}>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 capitalize">{action}</CardTitle>
+                <CardTitle className="text-sm font-medium text-foreground/70 capitalize">{action}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{typeof count === 'number' ? count : 0}</div>
@@ -116,7 +116,7 @@ export default function AuditLogsPage() {
             <CardTitle>Filters</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm font-medium">Filter by Action</label>
                 <Select value={filterAction} onValueChange={setFilterAction}>
@@ -200,23 +200,23 @@ export default function AuditLogsPage() {
                             {log.action}
                           </Badge>
                         </TableCell>
-                        <TableCell className="font-mono text-sm">{log.table_name}</TableCell>
-                        <TableCell className="font-mono text-sm text-gray-600">
+                        <TableCell className="font-mono text-sm text-foreground/70">{log.table_name}</TableCell>
+                        <TableCell className="font-mono text-sm text-foreground/70">
                           {log.record_id ? log.record_id.substring(0, 8) + '...' : '-'}
                         </TableCell>
-                        <TableCell className="font-mono text-sm text-gray-600">
+                        <TableCell className="font-mono text-sm text-foreground/70">
                           {log.user_id ? log.user_id.substring(0, 8) + '...' : 'System'}
                         </TableCell>
-                        <TableCell className="text-sm text-gray-600">
+                        <TableCell className="text-sm text-foreground/70">
                           {formatDate(log.created_at)}
                         </TableCell>
                         <TableCell>
                           {log.metadata && Object.keys(log.metadata).length > 0 ? (
                             <details className="text-xs">
-                              <summary className="cursor-pointer text-blue-600 hover:underline">
+                              <summary className="cursor-pointer text-primary hover:underline">
                                 View
                               </summary>
-                              <pre className="mt-2 p-2 bg-gray-50 rounded text-xs overflow-auto max-w-md">
+                              <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto max-w-md">
                                 {JSON.stringify(log.metadata, null, 2)}
                               </pre>
                             </details>
@@ -232,8 +232,8 @@ export default function AuditLogsPage() {
             )}
 
             {/* Pagination */}
-            <div className="mt-6 flex items-center justify-between">
-              <div className="text-sm text-gray-600">
+            <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-sm text-foreground/70">
                 Showing {offset + 1} to {Math.min(offset + limit, totalCount)} of {totalCount} logs
               </div>
               <div className="space-x-2">

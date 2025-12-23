@@ -1,27 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, Loader2, CheckCircle, Package, AlertCircle, MapPin } from 'lucide-react';
+import { ShoppingBag, Loader2, CheckCircle, Package, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useCartContext } from '@/contexts/CartContext';
 import { useToast } from '@/hooks/use-toast';
 import { createOrder } from '@/lib/shared-services/orderService';
 import { getPrimaryImageUrl } from '@/lib/shared-services/imageService';
 import { validateOrder } from '@/lib/cart-validation';
-import { getUserAddresses, getDefaultAddress, UserAddress } from '@/features/address/services/address.service';
 
 export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [addresses, setAddresses] = useState<UserAddress[]>([]);
-  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
-  const [loadingAddresses, setLoadingAddresses] = useState(true);
-  const { user, profile, roles, loading: authLoading } = useAuth();
+  const { user, roles, loading: authLoading } = useAuth();
   const { items, total, clearCart } = useCartContext();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -31,29 +26,6 @@ export default function CheckoutPage() {
       navigate('/auth/login');
     }
   }, [user, authLoading, navigate]);
-
-  // Load user addresses
-  useEffect(() => {
-    if (user && !authLoading) {
-      loadUserAddresses();
-    }
-  }, [user, authLoading]);
-
-  const loadUserAddresses = async () => {
-    setLoadingAddresses(true);
-    const result = await getUserAddresses(user!.id);
-    if (result.success && result.data.length > 0) {
-      setAddresses(result.data);
-      // Auto-select default address
-      const defaultAddr = result.data.find(a => a.is_default);
-      if (defaultAddr) {
-        setSelectedAddressId(defaultAddr.id);
-      } else {
-        setSelectedAddressId(result.data[0].id);
-      }
-    }
-    setLoadingAddresses(false);
-  };
 
   useEffect(() => {
     if (!authLoading && user && items.length === 0 && !success) {
@@ -74,27 +46,6 @@ export default function CheckoutPage() {
   const handlePlaceOrder = async () => {
     if (!user) return;
 
-    // Check if address is selected
-    if (!selectedAddressId || addresses.length === 0) {
-      toast({
-        variant: 'destructive',
-        title: 'Delivery address required',
-        description: 'Please add a delivery address to your account',
-      });
-      navigate('/addresses');
-      return;
-    }
-
-    const selectedAddress = addresses.find(a => a.id === selectedAddressId);
-    if (!selectedAddress) {
-      toast({
-        variant: 'destructive',
-        title: 'Invalid address',
-        description: 'Please select a valid delivery address',
-      });
-      return;
-    }
-
     // Final validation check
     const validation = validateOrder(items, total);
     if (!validation.valid) {
@@ -107,25 +58,7 @@ export default function CheckoutPage() {
     }
 
     setLoading(true);
-    const { data, error } = await createOrder(
-      user.id, 
-      items, 
-      user.id, 
-      roles,
-      {
-        // Include shipping address from selected address
-        shipping_address: {
-          recipient_name: selectedAddress.recipient_name,
-          address_line1: selectedAddress.address_line1,
-          address_line2: selectedAddress.address_line2,
-          city: selectedAddress.city,
-          state: selectedAddress.state,
-          postal_code: selectedAddress.postal_code,
-          country: selectedAddress.country,
-          contact_num: selectedAddress.contact_num,
-        },
-      }
-    );
+    const { data, error } = await createOrder(user.id, items, user.id, roles);
     setLoading(false);
 
     if (error) {
@@ -248,66 +181,6 @@ export default function CheckoutPage() {
               <CardTitle>Order Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Delivery Address */}
-              <div className="space-y-3">
-                <h4 className="font-medium text-sm">Delivery Address</h4>
-                {loadingAddresses ? (
-                  <div className="flex justify-center py-4">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  </div>
-                ) : addresses.length > 0 ? (
-                  <div className="space-y-2">
-                    {addresses.map(address => (
-                      <div
-                        key={address.id}
-                        onClick={() => setSelectedAddressId(address.id)}
-                        className={`p-3 rounded-lg border-2 cursor-pointer transition-colors ${
-                          selectedAddressId === address.id
-                            ? 'border-primary bg-primary/5'
-                            : 'border-muted hover:border-muted-foreground'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 text-sm">
-                            {address.label && (
-                              <p className="font-medium text-xs text-muted-foreground mb-1">{address.label}</p>
-                            )}
-                            {address.recipient_name && (
-                              <p className="font-medium text-sm">{address.recipient_name}</p>
-                            )}
-                            <p className="text-xs text-muted-foreground">{address.address_line1}</p>
-                            {address.address_line2 && (
-                              <p className="text-xs text-muted-foreground">{address.address_line2}</p>
-                            )}
-                            <p className="text-xs text-muted-foreground">
-                              {address.city} {address.postal_code}
-                            </p>
-                          </div>
-                          {address.is_default && (
-                            <Badge className="ml-2" variant="secondary">Default</Badge>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-sm space-y-2">
-                    <p className="text-destructive font-medium">No addresses found</p>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => navigate('/addresses')}
-                      className="w-full"
-                    >
-                      <MapPin className="h-4 w-4 mr-2" />
-                      Add Address
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              <Separator />
-
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Items</span>
                 <span className="font-medium">
@@ -330,13 +203,7 @@ export default function CheckoutPage() {
               <Button
                 className="w-full"
                 size="lg"
-                disabled={
-                  loading ||
-                  items.length === 0 || 
-                  validationError !== null ||
-                  !selectedAddressId ||
-                  addresses.length === 0
-                }
+                disabled={loading || items.length === 0 || validationError !== null}
                 onClick={handlePlaceOrder}
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
