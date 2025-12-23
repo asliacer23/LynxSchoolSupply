@@ -66,9 +66,11 @@ export function useUnreadCount() {
 
       // Set reconnect timeout (reconnect if no message for 30s)
       reconnectTimeout = setTimeout(() => {
-        console.warn('Notification subscription lost, reconnecting...');
+        // Silently reconnect without warning
         subscription?.unsubscribe();
-        setupSubscription();
+        if (isSubscribed) {
+          setupSubscription();
+        }
       }, 30000);
     };
 

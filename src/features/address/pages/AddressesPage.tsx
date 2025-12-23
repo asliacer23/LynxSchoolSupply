@@ -37,35 +37,6 @@ export default function AddressesPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          {defaultAddress && (
-            <Card className="border-blue-200 bg-blue-50">
-              <CardHeader>
-                <CardTitle className="text-blue-900">Default Delivery Address</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {defaultAddress.recipient_name && (
-                    <p className="font-medium">{defaultAddress.recipient_name}</p>
-                  )}
-                  <p>{defaultAddress.address_line1}</p>
-                  {defaultAddress.address_line2 && (
-                    <p>{defaultAddress.address_line2}</p>
-                  )}
-                  <p>
-                    {defaultAddress.city}
-                    {defaultAddress.state && `, ${defaultAddress.state}`}
-                    {defaultAddress.postal_code && ` ${defaultAddress.postal_code}`}
-                  </p>
-                  {defaultAddress.contact_num && (
-                    <p className="text-sm text-muted-foreground">
-                      Phone: {defaultAddress.contact_num}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           <AddressManagement />
         </div>
       )}

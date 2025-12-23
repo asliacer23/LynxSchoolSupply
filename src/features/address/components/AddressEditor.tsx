@@ -1,10 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserAddressAndContact } from '../services/address.service';
 
@@ -25,10 +31,19 @@ export function AddressEditor({
   currentContactNum = '',
   onSuccess,
 }: AddressEditorProps) {
-  const [address, setAddress] = useState(currentAddress || '');
-  const [contactNum, setContactNum] = useState(currentContactNum || '');
+  const [address, setAddress] = useState('');
+  const [contactNum, setContactNum] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  // ✅ THIS IS THE IMPORTANT FIX
+  // Sync latest props whenever dialog opens or data changes
+  useEffect(() => {
+    if (isOpen) {
+      setAddress(currentAddress || '');
+      setContactNum(currentContactNum || '');
+    }
+  }, [isOpen, currentAddress, currentContactNum]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +67,11 @@ export function AddressEditor({
     }
 
     setIsLoading(true);
-    const result = await updateUserAddressAndContact(userId, address, contactNum);
+    const result = await updateUserAddressAndContact(
+      userId,
+      address,
+      contactNum
+    );
     setIsLoading(false);
 
     if (result.success) {
@@ -60,6 +79,7 @@ export function AddressEditor({
         title: 'Success',
         description: 'Your address has been updated',
       });
+
       onOpenChange(false);
       onSuccess?.();
     } else {
@@ -71,20 +91,12 @@ export function AddressEditor({
     }
   };
 
-  const handleDialogOpenChange = (open: boolean) => {
-    if (open) {
-      // When opening, update the form with current values
-      setAddress(currentAddress || '');
-      setContactNum(currentContactNum || '');
-    }
-    onOpenChange(open);
-  };
-
   return (
-    <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Edit Delivery Address</DialogTitle>
+          <DialogDescription>Update your delivery address and contact information</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -116,14 +128,13 @@ export function AddressEditor({
           </div>
 
           <div className="flex gap-2 pt-4">
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="flex-1"
-            >
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" disabled={isLoading} className="flex-1">
+              {isLoading && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               {isLoading ? 'Saving...' : 'Save Address'}
             </Button>
+
             <Button
               type="button"
               variant="outline"

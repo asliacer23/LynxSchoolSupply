@@ -29,6 +29,10 @@ export function useAddresses(userId: string): UseAddressesResult {
   const [isLoading, setIsLoading] = useState(true);
 
   const refetch = useCallback(async () => {
+    if (!userId) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     try {
       const [addressesResult, defaultResult] = await Promise.all([
@@ -55,6 +59,7 @@ export function useAddresses(userId: string): UseAddressesResult {
 
   const addAddress = useCallback(
     async (addressInput: CreateAddressInput): Promise<boolean> => {
+      if (!userId) return false;
       const result = await createAddress(userId, addressInput);
       if (result.success) {
         toast({
@@ -77,6 +82,7 @@ export function useAddresses(userId: string): UseAddressesResult {
 
   const editAddress = useCallback(
     async (addressId: string, addressInput: Partial<CreateAddressInput>): Promise<boolean> => {
+      if (!userId) return false;
       const result = await updateAddress(addressId, userId, addressInput);
       if (result.success) {
         toast({
@@ -99,6 +105,7 @@ export function useAddresses(userId: string): UseAddressesResult {
 
   const removeAddress = useCallback(
     async (addressId: string): Promise<boolean> => {
+      if (!userId) return false;
       const result = await deleteAddress(addressId, userId);
       if (result.success) {
         toast({
@@ -121,6 +128,7 @@ export function useAddresses(userId: string): UseAddressesResult {
 
   const setAsDefault = useCallback(
     async (addressId: string): Promise<boolean> => {
+      if (!userId) return false;
       const result = await setDefaultAddress(addressId, userId);
       if (result?.success) {
         toast({

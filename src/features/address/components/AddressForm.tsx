@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { createAddress, updateAddress, UserAddress, CreateAddressInput } from '../services/address.service';
@@ -38,6 +38,24 @@ export function AddressForm({
     country: address?.country || 'PH',
     is_default: address?.is_default || false,
   });
+
+  // ✅ Sync form data whenever address prop changes
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        label: address?.label || '',
+        recipient_name: address?.recipient_name || '',
+        contact_num: address?.contact_num || '',
+        address_line1: address?.address_line1 || '',
+        address_line2: address?.address_line2 || '',
+        city: address?.city || '',
+        state: address?.state || '',
+        postal_code: address?.postal_code || '',
+        country: address?.country || 'PH',
+        is_default: address?.is_default || false,
+      });
+    }
+  }, [isOpen, address]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -105,20 +123,6 @@ export function AddressForm({
   };
 
   const handleDialogOpenChange = (open: boolean) => {
-    if (open) {
-      setFormData({
-        label: address?.label || '',
-        recipient_name: address?.recipient_name || '',
-        contact_num: address?.contact_num || '',
-        address_line1: address?.address_line1 || '',
-        address_line2: address?.address_line2 || '',
-        city: address?.city || '',
-        state: address?.state || '',
-        postal_code: address?.postal_code || '',
-        country: address?.country || 'PH',
-        is_default: address?.is_default || false,
-      });
-    }
     onOpenChange(open);
   };
 
@@ -129,6 +133,9 @@ export function AddressForm({
           <DialogTitle>
             {address?.id ? 'Edit Address' : 'Add New Address'}
           </DialogTitle>
+          <DialogDescription>
+            {address?.id ? 'Update your address information' : 'Add a new delivery address'}
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">

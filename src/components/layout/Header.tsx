@@ -25,7 +25,7 @@ interface HeaderProps {
 
 export function Header({ cartCount = 0, onCartClick }: HeaderProps) {
   const [editProfileOpen, setEditProfileOpen] = useState(false);
-  const { user, profile, roles, hasRole, signOut, refreshProfile } = useAuth();
+  const { user, profile, roles, hasRole, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -125,10 +125,13 @@ export function Header({ cartCount = 0, onCartClick }: HeaderProps) {
               </DropdownMenuItem>
 
               {!isStaff && (
-                <DropdownMenuItem onClick={() => navigate('/addresses')}>
-                  <MapPin className="mr-2 h-4 w-4" />
-                  Manage Addresses
-                </DropdownMenuItem>
+                <>
+                  <DropdownMenuItem onClick={() => navigate('/products')}><Package className="mr-2 h-4 w-4" />Products</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/addresses')}>
+                    <MapPin className="mr-2 h-4 w-4" />
+                    Manage Addresses
+                  </DropdownMenuItem>
+                </>
               )}
               <DropdownMenuSeparator />
 
@@ -154,8 +157,7 @@ export function Header({ cartCount = 0, onCartClick }: HeaderProps) {
 
               {!isStaff && <>
                 <DropdownMenuItem onClick={() => navigate('/orders')}><ShoppingBag className="mr-2 h-4 w-4" />My Orders</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/payments')}><CreditCard className="mr-2 h-4 w-4" />Payment History</DropdownMenuItem>
-                <DropdownMenuSeparator />
+                
               </>}
 
               <DropdownMenuItem onClick={handleSignOut}><LogOut className="mr-2 h-4 w-4" />Sign Out</DropdownMenuItem>
@@ -172,7 +174,6 @@ export function Header({ cartCount = 0, onCartClick }: HeaderProps) {
           userId={user.id}
           currentUserId={user.id}
           userRoles={roles}
-          onProfileUpdated={() => refreshProfile()}
         />
       )}
     </header>

@@ -23,6 +23,10 @@ export function AddressList({ userId, onAddressSelected }: AddressListProps) {
   }, [userId]);
 
   const loadAddresses = async () => {
+    if (!userId) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     const result = await getUserAddresses(userId);
     if (result.success) {

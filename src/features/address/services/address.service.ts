@@ -30,13 +30,29 @@ export interface CreateAddressInput {
   is_default?: boolean;
 }
 
+// Type-safe wrapper for Supabase queries on user_addresses table
+// Since the table may not be in generated types, we use any to bypass TypeScript checking
+type AddressQuery = ReturnType<typeof supabase.from> & {
+  select: (columns: string) => any;
+  insert: (data: any) => any;
+  update: (data: any) => any;
+  delete: () => any;
+};
+
+/**
+ * Helper function to safely query the user_addresses table
+ * Works around TypeScript type limitations with Supabase client
+ */
+function getAddressTable() {
+  return ((supabase as any).from('user_addresses') as unknown) as AddressQuery;
+}
+
 /**
  * Fetch all addresses for a user
  */
 export async function getUserAddresses(userId: string) {
   try {
-    const { data, error } = await supabase
-      .from('user_addresses')
+    const { data, error } = await getAddressTable()
       .select('*')
       .eq('user_id', userId)
       .order('is_default', { ascending: false })
@@ -46,7 +62,7 @@ export async function getUserAddresses(userId: string) {
       return { success: false, error: error.message, data: [] };
     }
 
-    return { success: true, data: data as UserAddress[] };
+    return { success: true, data: (data || []) as UserAddress[] };
   } catch (error) {
     return {
       success: false,
@@ -57,12 +73,37 @@ export async function getUserAddresses(userId: string) {
 }
 
 /**
+ * Get a single address by ID
+ */
+export async function getAddressById(addressId: string, userId: string) {
+  try {
+    const { data, error } = await getAddressTable()
+      .select('*')
+      .eq('id', addressId)
+      .eq('user_id', userId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      // PGRST116 = no rows found
+      return { success: false, error: error.message, data: null };
+    }
+
+    return { success: true, data: (data as UserAddress) || null };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch address',
+      data: null,
+    };
+  }
+}
+
+/**
  * Get the default address for a user
  */
 export async function getDefaultAddress(userId: string) {
   try {
-    const { data, error } = await supabase
-      .from('user_addresses')
+    const { data, error } = await getAddressTable()
       .select('*')
       .eq('user_id', userId)
       .eq('is_default', true)
@@ -73,7 +114,7 @@ export async function getDefaultAddress(userId: string) {
       return { success: false, error: error.message, data: null };
     }
 
-    return { success: true, data: data as UserAddress | null };
+    return { success: true, data: (data as UserAddress) || null };
   } catch (error) {
     return {
       success: false,
@@ -93,15 +134,13 @@ export async function createAddress(userId: string, addressInput: CreateAddressI
 
     // If setting as default, unset other default addresses
     if (isDefault) {
-      await supabase
-        .from('user_addresses')
+      await getAddressTable()
         .update({ is_default: false })
         .eq('user_id', userId)
         .eq('is_default', true);
     }
 
-    const { data, error } = await supabase
-      .from('user_addresses')
+    const { data, error } = await getAddressTable()
       .insert({
         user_id: userId,
         label: addressInput.label || null,
@@ -122,7 +161,7 @@ export async function createAddress(userId: string, addressInput: CreateAddressI
       return { success: false, error: error.message, data: null };
     }
 
-    return { success: true, data: data as UserAddress };
+    return { success: true, data: (data as UserAddress) };
   } catch (error) {
     return {
       success: false,
@@ -141,8 +180,7 @@ export async function updateAddress(addressId: string, userId: string, addressIn
 
     // If setting as default, unset other default addresses
     if (isDefault) {
-      await supabase
-        .from('user_addresses')
+      await getAddressTable()
         .update({ is_default: false })
         .eq('user_id', userId)
         .neq('id', addressId)
@@ -164,8 +202,7 @@ export async function updateAddress(addressId: string, userId: string, addressIn
     
     updateData.updated_at = new Date().toISOString();
 
-    const { data, error } = await supabase
-      .from('user_addresses')
+    const { data, error } = await getAddressTable()
       .update(updateData)
       .eq('id', addressId)
       .eq('user_id', userId)
@@ -176,7 +213,7 @@ export async function updateAddress(addressId: string, userId: string, addressIn
       return { success: false, error: error.message, data: null };
     }
 
-    return { success: true, data: data as UserAddress };
+    return { success: true, data: (data as UserAddress) };
   } catch (error) {
     return {
       success: false,
@@ -192,18 +229,16 @@ export async function updateAddress(addressId: string, userId: string, addressIn
 export async function deleteAddress(addressId: string, userId: string) {
   try {
     // First check if this is the default address
-    const { data: addressData } = await supabase
-      .from('user_addresses')
+    const { data: addressData } = await getAddressTable()
       .select('is_default')
       .eq('id', addressId)
       .eq('user_id', userId)
       .single();
 
-    const wasDefault = addressData?.is_default;
+    const wasDefault = (addressData as any)?.is_default;
 
     // Delete the address
-    const { error } = await supabase
-      .from('user_addresses')
+    const { error } = await getAddressTable()
       .delete()
       .eq('id', addressId)
       .eq('user_id', userId);
@@ -214,18 +249,16 @@ export async function deleteAddress(addressId: string, userId: string) {
 
     // If it was the default, set the most recent address as default
     if (wasDefault) {
-      const { data: addresses } = await supabase
-        .from('user_addresses')
+      const { data: addresses } = await getAddressTable()
         .select('id')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(1);
 
-      if (addresses && addresses.length > 0) {
-        await supabase
-          .from('user_addresses')
+      if (addresses && (addresses as any[]).length > 0) {
+        await getAddressTable()
           .update({ is_default: true })
-          .eq('id', addresses[0].id);
+          .eq('id', (addresses as any[])[0].id);
       }
     }
 
@@ -244,15 +277,13 @@ export async function deleteAddress(addressId: string, userId: string) {
 export async function setDefaultAddress(addressId: string, userId: string) {
   try {
     // Unset all other default addresses
-    await supabase
-      .from('user_addresses')
+    await getAddressTable()
       .update({ is_default: false })
       .eq('user_id', userId)
       .neq('id', addressId);
 
     // Set this address as default
-    const { data, error } = await supabase
-      .from('user_addresses')
+    const { data, error } = await getAddressTable()
       .update({ is_default: true })
       .eq('id', addressId)
       .eq('user_id', userId)
@@ -263,7 +294,7 @@ export async function setDefaultAddress(addressId: string, userId: string) {
       return { success: false, error: error.message, data: null };
     }
 
-    return { success: true, data: data as UserAddress };
+    return { success: true, data: (data as UserAddress) };
   } catch (error) {
     return {
       success: false,

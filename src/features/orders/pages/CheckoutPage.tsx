@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, Loader2, CheckCircle, Package, AlertCircle } from 'lucide-react';
+import { ShoppingBag, Loader2, CheckCircle, Package, AlertCircle, MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -11,11 +11,15 @@ import { useToast } from '@/hooks/use-toast';
 import { createOrder } from '@/lib/shared-services/orderService';
 import { getPrimaryImageUrl } from '@/lib/shared-services/imageService';
 import { validateOrder } from '@/lib/cart-validation';
+import { getUserAddresses, UserAddress } from '@/features/address/services/address.service';
 
 export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [addresses, setAddresses] = useState<UserAddress[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [loadingAddresses, setLoadingAddresses] = useState(true);
   const { user, roles, loading: authLoading } = useAuth();
   const { items, total, clearCart } = useCartContext();
   const navigate = useNavigate();
@@ -33,6 +37,31 @@ export default function CheckoutPage() {
     }
   }, [items, authLoading, user, navigate, success]);
 
+  // Load user addresses
+  useEffect(() => {
+    if (user && user.id) {
+      setLoadingAddresses(true);
+      getUserAddresses(user.id).then(result => {
+        if (result.success) {
+          setAddresses(result.data);
+          const defaultAddr = result.data.find(a => a.is_default);
+          if (defaultAddr) {
+            setSelectedAddressId(defaultAddr.id);
+          } else if (result.data.length > 0) {
+            setSelectedAddressId(result.data[0].id);
+          }
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Error loading addresses',
+            description: 'Please try again',
+          });
+        }
+        setLoadingAddresses(false);
+      });
+    }
+  }, [user, toast]);
+
   // Validate order on mount and when items change
   useEffect(() => {
     const validation = validateOrder(items, total);
@@ -46,6 +75,25 @@ export default function CheckoutPage() {
   const handlePlaceOrder = async () => {
     if (!user) return;
 
+    if (!selectedAddressId) {
+      toast({
+        variant: 'destructive',
+        title: 'No address selected',
+        description: 'Please select a delivery address',
+      });
+      return;
+    }
+
+    const selectedAddr = addresses.find(a => a.id === selectedAddressId);
+    if (!selectedAddr) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid address',
+        description: 'Please select a valid delivery address',
+      });
+      return;
+    }
+
     // Final validation check
     const validation = validateOrder(items, total);
     if (!validation.valid) {
@@ -58,7 +106,24 @@ export default function CheckoutPage() {
     }
 
     setLoading(true);
-    const { data, error } = await createOrder(user.id, items, user.id, roles);
+    const { data, error } = await createOrder(
+      user.id,
+      items,
+      user.id,
+      roles,
+      {
+        shipping_address: {
+          recipient_name: selectedAddr.recipient_name,
+          address_line1: selectedAddr.address_line1,
+          address_line2: selectedAddr.address_line2,
+          city: selectedAddr.city,
+          state: selectedAddr.state,
+          postal_code: selectedAddr.postal_code,
+          country: selectedAddr.country,
+          contact_num: selectedAddr.contact_num,
+        },
+      }
+    );
     setLoading(false);
 
     if (error) {
@@ -177,29 +242,127 @@ export default function CheckoutPage() {
 
         <div>
           <Card className="sticky top-24">
-            <CardHeader>
-              <CardTitle>Order Summary</CardTitle>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  Delivery Address
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/addresses')}
+                  className="text-xs h-auto py-1"
+                >
+                  Manage
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Items</span>
-                <span className="font-medium">
-                  {items.reduce((sum, item) => sum + item.quantity, 0)}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span>₱{total.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Shipping</span>
-                <span>Free</span>
-              </div>
+            <Separator />
+            <CardContent className="pt-4 space-y-4">
+              {loadingAddresses ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : addresses.length === 0 ? (
+                <div className="text-center py-6 space-y-3">
+                  <div className="flex justify-center">
+                    <div className="bg-muted p-3 rounded-full">
+                      <MapPin className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">No addresses yet</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Add an address to proceed
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => navigate('/addresses')}
+                    className="w-full"
+                  >
+                    <MapPin className="h-4 w-4 mr-2" />
+                    Add Address
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-80 overflow-y-auto">
+                  {addresses.map((address) => (
+                    <div
+                      key={address.id}
+                      onClick={() => setSelectedAddressId(address.id)}
+                      className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                        selectedAddressId === address.id
+                          ? 'border-primary bg-primary/5'
+                          : 'border-muted hover:border-muted-foreground'
+                      }`}
+                    >
+                      <div className="flex gap-2">
+                        <div className={`flex-shrink-0 w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center ${
+                          selectedAddressId === address.id
+                            ? 'border-primary bg-primary'
+                            : 'border-muted-foreground'
+                        }`}>
+                          {selectedAddressId === address.id && (
+                            <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {address.label && (
+                              <p className="text-xs font-semibold text-primary">
+                                {address.label}
+                              </p>
+                            )}
+                            {address.is_default && (
+                              <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+                                Default
+                              </span>
+                            )}
+                          </div>
+                          {address.recipient_name && (
+                            <p className="font-medium text-xs mt-1">{address.recipient_name}</p>
+                          )}
+                          <p className="text-xs text-foreground/80 line-clamp-2">
+                            {address.address_line1}
+                            {address.address_line2 && `, ${address.address_line2}`}
+                          </p>
+                          <p className="text-xs text-foreground/70">
+                            {address.city}
+                            {address.state && `, ${address.state}`}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <Separator />
-              <div className="flex justify-between font-bold text-lg">
-                <span>Total</span>
-                <span>₱{total.toFixed(2)}</span>
-              </div>
+
+              {/* Order Summary */}
+              <div className="space-y-3 pt-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Items</span>
+                  <span className="font-medium">
+                    {items.reduce((sum, item) => sum + item.quantity, 0)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span>₱{total.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Shipping</span>
+                  <span>Free</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between font-bold text-lg">
+                  <span>Total</span>
+                  <span>₱{total.toFixed(2)}</span>
+                </div>
+                </div>
               <Button
                 className="w-full"
                 size="lg"

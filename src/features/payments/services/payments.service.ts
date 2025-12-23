@@ -94,6 +94,9 @@ export async function updatePaymentStatus(
  * Get user's payment history
  */
 export async function getUserPayments(userId: string) {
+  if (!userId) {
+    return { data: [], error: null };
+  }
   const { data, error } = await supabase
     .from('payments')
     .select(`
