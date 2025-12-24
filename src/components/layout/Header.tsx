@@ -82,8 +82,7 @@ export function Header({ cartCount = 0, onCartClick }: HeaderProps) {
           </>}
 
           {isCashier && !isOwner && !isSuperadmin && <>
-            <Link to="/dashboard" className={`text-sm font-medium transition-colors ${location.pathname === '/dashboard' ? 'text-foreground font-semibold' : 'text-muted-foreground hover:text-foreground'}`}>Sales Dashboard</Link>
-            <Link to="/cashier/pos" className={`text-sm font-medium transition-colors ${location.pathname === '/cashier/pos' ? 'text-foreground font-semibold' : 'text-muted-foreground hover:text-foreground'}`}>POS</Link>
+            <Link to="/cashier/pos" className={`text-sm font-medium transition-colors ${location.pathname === '/cashier/pos' ? 'text-foreground font-semibold' : 'text-muted-foreground hover:text-foreground'}`}>Point of Sale</Link>
           </>}
 
           {!isStaff && <>
@@ -150,7 +149,6 @@ export function Header({ cartCount = 0, onCartClick }: HeaderProps) {
               </>}
 
               {isCashier && !isOwner && !isSuperadmin && <>
-                <DropdownMenuItem onClick={() => navigate('/dashboard')}><LayoutDashboard className="mr-2 h-4 w-4" />Sales Dashboard</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/cashier/pos')}><ShoppingBag className="mr-2 h-4 w-4" />POS System</DropdownMenuItem>
                 <DropdownMenuSeparator />
               </>}

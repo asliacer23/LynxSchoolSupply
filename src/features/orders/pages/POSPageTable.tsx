@@ -207,6 +207,8 @@ export default function POSPageTable() {
     setStep('search');
     setSearchQuery('');
     setCategoryFilter('all');
+    // Reload products to show updated stock levels
+    loadProducts();
   };
 
   if (authLoading) {
@@ -493,11 +495,11 @@ export default function POSPageTable() {
             createdAt={createdAt}
           />
 
-          <div className="flex gap-4 justify-center">
+          <div className="flex flex-wrap gap-2 sm:gap-4 justify-center">
             <Button
               size="lg"
               onClick={() => window.print()}
-              className="gap-2"
+              className="gap-2 flex-1 min-w-[140px] sm:flex-none"
             >
               <Printer className="h-4 w-4" />
               Print Receipt
@@ -506,6 +508,7 @@ export default function POSPageTable() {
               size="lg"
               variant="outline"
               onClick={resetPOS}
+              className="flex-1 min-w-[140px] sm:flex-none"
             >
               <Plus className="h-4 w-4 mr-2" />
               New Transaction

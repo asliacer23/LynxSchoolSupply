@@ -45,7 +45,7 @@ export async function createPayment(paymentData: PaymentInput, userId?: string) 
     });
   }
 
-  // Auto-complete POS orders when payment is created as 'completed'
+  // Auto-complete orders when payment is created as 'completed'
   if (data && paymentData.status === 'completed') {
     const order = await supabase
       .from('orders')
@@ -53,16 +53,22 @@ export async function createPayment(paymentData: PaymentInput, userId?: string) 
       .eq('id', paymentData.order_id)
       .maybeSingle();
 
-    // POS orders have cashier_id set and no user_id (walk-in customers)
-    if (order.data?.cashier_id && !order.data?.user_id && order.data?.status === 'pending') {
+    // Auto-complete POS orders (walk-in customers) OR any SuperAdmin/Owner orders
+    if (order.data && (order.data?.status === 'pending' || order.data?.status === 'processing')) {
       const { error: updateError } = await supabase
         .from('orders')
         .update({ status: 'completed' })
         .eq('id', paymentData.order_id);
 
       if (updateError) {
-        console.error('Error auto-completing POS order:', updateError);
+        console.error('Error auto-completing order:', updateError);
       }
+    }
+
+    // Deduct stock from inventory when payment is confirmed
+    const { success: stockSuccess, error: stockError } = await deductStockForOrder(paymentData.order_id);
+    if (!stockSuccess) {
+      console.error('Error deducting stock for order:', stockError);
     }
   }
 
@@ -102,17 +108,23 @@ export async function updatePaymentStatus(paymentId: string, status: 'completed'
       .maybeSingle();
     
     if (status === 'completed') {
-      // Auto-complete POS orders (face-to-face transactions)
-      // POS orders have cashier_id set and no user_id (walk-in customers)
-      if (order.data?.cashier_id && !order.data?.user_id) {
+      // Auto-complete orders when payment is completed
+      // Works for POS orders (walk-in) and SuperAdmin/Owner orders
+      if (order.data && (order.data?.status === 'pending' || order.data?.status === 'processing')) {
         const { error: updateError } = await supabase
           .from('orders')
           .update({ status: 'completed' })
           .eq('id', data.order_id);
         
         if (updateError) {
-          console.error('Error auto-completing POS order:', updateError);
+          console.error('Error auto-completing order:', updateError);
         }
+      }
+
+      // Deduct stock from inventory when payment is confirmed
+      const { success: stockSuccess, error: stockError } = await deductStockForOrder(data.order_id);
+      if (!stockSuccess) {
+        console.error('Error deducting stock for order:', stockError);
       }
 
       if (order.data?.user_id && data.amount) {
@@ -171,6 +183,58 @@ export async function getAllPayments() {
   }
 
   return { data, error: null };
+}
+
+/**
+ * Deduct stock for order items when payment is confirmed
+ * Called when payment status is updated to 'completed'
+ */
+export async function deductStockForOrder(orderId: string) {
+  try {
+    // Get order items
+    const { data: orderItems, error: itemsError } = await supabase
+      .from('order_items')
+      .select('product_id, quantity')
+      .eq('order_id', orderId);
+
+    if (itemsError || !orderItems) {
+      console.error('Error fetching order items for stock deduction:', itemsError);
+      return { success: false, error: itemsError };
+    }
+
+    // Deduct stock for each item
+    for (const item of orderItems) {
+      // Get current product stock
+      const { data: product, error: productError } = await supabase
+        .from('products')
+        .select('stock')
+        .eq('id', item.product_id)
+        .single();
+
+      if (productError || !product) {
+        console.error(`Error fetching product ${item.product_id}:`, productError);
+        continue;
+      }
+
+      // Calculate new stock (ensure it doesn't go below 0)
+      const newStock = Math.max(0, (product.stock || 0) - item.quantity);
+
+      // Update stock
+      const { error: updateError } = await supabase
+        .from('products')
+        .update({ stock: newStock })
+        .eq('id', item.product_id);
+
+      if (updateError) {
+        console.error(`Error updating stock for product ${item.product_id}:`, updateError);
+      }
+    }
+
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('Error deducting stock for order:', error);
+    return { success: false, error };
+  }
 }
 
 /**

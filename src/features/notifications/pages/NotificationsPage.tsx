@@ -139,7 +139,7 @@ function Section({
           muted ? 'text-muted-foreground' : ''
         }`}
       >
-        {dot && <span className="h-2 w-2 rounded-full bg-blue-500" />}
+        {dot && <span className="h-2 w-2 rounded-full bg-foreground" />}
         {title}
       </h2>
       <div className="space-y-2">{children}</div>
@@ -164,7 +164,7 @@ function NotificationCard({
     <Card
       className={
         !notification.is_read
-          ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
+          ? 'border-foreground/20 bg-muted'
           : ''
       }
     >
@@ -175,7 +175,7 @@ function NotificationCard({
             <div className="mb-1 flex items-center gap-2">
               <h3 className="font-semibold">{notification.title}</h3>
               {!notification.is_read && (
-                <span className="rounded-full bg-blue-500 px-2 py-0.5 text-xs text-white">
+                <span className="rounded-full bg-foreground text-background px-2 py-0.5 text-xs font-medium">
                   New
                 </span>
               )}

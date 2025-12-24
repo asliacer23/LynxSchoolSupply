@@ -120,7 +120,7 @@ export function NotificationDropdown() {
                           {notification.title}
                         </p>
                         {!notification.is_read && (
-                          <span className="h-1.5 w-1.5 rounded-full bg-blue-500 flex-shrink-0 animate-pulse" />
+                          <span className="h-1.5 w-1.5 rounded-full bg-foreground flex-shrink-0 animate-pulse" />
                         )}
                       </div>
 
@@ -251,7 +251,7 @@ export function NotificationDropdown() {
               <div
                 key={notification.id}
                 className={`px-3 py-2 transition-all duration-300 animate-in fade-in ${
-                  !notification.is_read ? 'bg-blue-50 dark:bg-blue-950/20' : 'hover:bg-muted/30'
+                  !notification.is_read ? 'bg-muted' : 'hover:bg-muted/30'
                 }`}
                 style={{
                   animationDelay: `${index * 25}ms`
@@ -264,7 +264,7 @@ export function NotificationDropdown() {
                         {notification.title}
                       </p>
                       {!notification.is_read && (
-                        <span className="h-1.5 w-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-foreground flex-shrink-0" />
                       )}
                     </div>
                     <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2 leading-snug">
