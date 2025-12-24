@@ -12,6 +12,8 @@ import { roleCache } from "@/lib/role-cache";
 import HomePage from "@/features/home/pages/HomePage";
 import LoginPage from "@/features/auth/pages/LoginPage";
 import RegisterPage from "@/features/auth/pages/RegisterPage";
+import ForgotPasswordPage from "@/features/auth/pages/ForgotPasswordPage";
+import ResetPasswordPage from "@/features/auth/pages/ResetPasswordPage";
 import ProductsPage from "@/features/products/pages/ProductsPage";
 import ProductDetailPage from "@/features/products/pages/ProductDetailPage";
 import ProductsManagePage from "@/features/products/pages/ProductsManagePage";
@@ -61,6 +63,8 @@ const App = () => {
           {/* Auth routes (no layout) */}
           <Route path="/auth/login" element={<LoginPage />} />
           <Route path="/auth/register" element={<RegisterPage />} />
+          <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
           
           {/* Main routes with layout */}
           <Route element={<MainLayout />}>
