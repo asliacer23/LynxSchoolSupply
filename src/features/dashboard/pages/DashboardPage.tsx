@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { getPrimaryImageUrl } from '@/lib/shared-services/imageService';
+import { OrderDetailsModal } from '../../orders/components/OrderDetailsModal';
 
 /**
  * Unified Dashboard Page
@@ -25,6 +26,7 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('orders');
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   // Authorization check
   useEffect(() => {
@@ -198,7 +200,8 @@ export default function DashboardPage() {
                   {orders.slice(0, 10).map(order => (
                     <div
                       key={order.id}
-                      className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border rounded-lg"
+                      className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border rounded-lg hover:bg-muted/30 cursor-pointer transition-colors"
+                      onClick={() => setSelectedOrderId(order.id)}
                     >
                       <div>
                         <p className="font-mono text-sm">#{order.id.slice(0, 8).toUpperCase()}</p>
@@ -288,45 +291,6 @@ export default function DashboardPage() {
                     })}
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
-
-        {/* System Info Tab - superadmin only */}
-        {isSuperadmin && (
-          <TabsContent value="info">
-            <Card>
-              <CardHeader>
-                <CardTitle>System Information</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="p-4 border rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-1">Application</p>
-                    <p className="font-medium">LynxSchoolSupplies</p>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-1">Current User</p>
-                    <p className="font-medium">{profile?.full_name || 'Unknown'}</p>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-1">User Email</p>
-                    <p className="font-medium">{user?.email}</p>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-1">Role</p>
-                    <p className="font-medium">{isSuperadmin ? 'System Administrator' : isAdmin() ? 'Business Owner' : 'Cashier'}</p>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-1">Permissions</p>
-                    <p className="font-medium">Full System Access</p>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-1">Last Visited</p>
-                    <p className="font-medium">{new Date().toLocaleDateString()}</p>
-                  </div>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -504,7 +468,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="p-3 border rounded-lg">
                   <p className="text-xs text-muted-foreground">Role</p>
-                  <p className="font-medium text-sm">{isSuperadmin ? 'System Administrator' : isAdmin() ? 'Business Owner' : 'Cashier'}</p>
+                  <p className="font-medium text-sm">System Administrator</p>
                 </div>
                 <div className="p-3 border rounded-lg">
                   <p className="text-xs text-muted-foreground">Permissions</p>
@@ -519,6 +483,12 @@ export default function DashboardPage() {
           </Card>
         )}
       </div>
+
+      <OrderDetailsModal 
+        orderId={selectedOrderId}
+        open={!!selectedOrderId}
+        onOpenChange={(open) => !open && setSelectedOrderId(null)}
+      />
     </div>
   );
 }

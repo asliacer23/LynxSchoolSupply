@@ -110,8 +110,56 @@ export async function getOrderWithItems(
     return { data: null, error: itemsError };
   }
 
+  // Fetch user profile if this is a customer order
+  let customerProfile = null;
+  if (order.user_id) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .eq('id', order.user_id)
+      .maybeSingle();
+    
+    // Fetch user's role to display position
+    let userRole = 'Customer';
+    if (profile) {
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role:roles(name)')
+        .eq('user_id', order.user_id);
+      
+      if (roles && roles.length > 0) {
+        const roleNames = roles.map((r: any) => r.role?.name).filter(Boolean);
+        // Get the highest priority role
+        if (roleNames.includes('superadmin')) userRole = 'Super Admin';
+        else if (roleNames.includes('owner')) userRole = 'Owner';
+        else if (roleNames.includes('cashier')) userRole = 'Cashier';
+        else userRole = 'Customer';
+      }
+    }
+
+    customerProfile = profile ? { ...profile, position: userRole } : null;
+  }
+
+  // Fetch cashier profile if this is a POS order
+  let cashierProfile = null;
+  if (order.cashier_id) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .eq('id', order.cashier_id)
+      .maybeSingle();
+    
+    // Cashier's role should be 'Cashier'
+    cashierProfile = profile ? { ...profile, position: 'Cashier' } : null;
+  }
+
   return {
-    data: { ...order, items: items as OrderItem[] } as Order,
+    data: { 
+      ...order, 
+      items: items as OrderItem[],
+      customer_profile: customerProfile,
+      cashier_profile: cashierProfile,
+    } as Order & { customer_profile?: any; cashier_profile?: any },
     error: null,
   };
 }

@@ -6,28 +6,32 @@ import { triggerOrderCreatedNotification, triggerOrderStatusNotification } from 
  * Create a new order
  * Shared by: cashier, orders, dashboard
  * @param userId - Customer user ID (null for walk-in customers in POS)
- * @param cartItems - Array of items to order
- * @param cashierId - Cashier ID (for POS orders)
+ * @param cartItems - Array of items to order with product_id, quantity, and price
+ * @param cashierId - Cashier ID (for POS orders only)
  * @param userRoles - User roles for authorization
- * @param deliveryAddress - Delivery address for the order
- * @param deliveryContactNum - Contact number for delivery
+ * @param orderData - Shipping address and other order details
  */
 export async function createOrder(
   userId: string | null,
-  cartItems: Array<{ product_id: string; quantity: number }>,
+  cartItems: Array<{ product_id: string; quantity: number; price?: number }>,
   cashierId?: string,
   userRoles: string[] = [],
   orderData?: {
     shipping_address?: Record<string, unknown>;
   }
 ) {
+  // Calculate total from items before creating order
+  const total = cartItems.reduce((sum, item) => {
+    return sum + ((item.price ?? 0) * item.quantity);
+  }, 0);
+
   const { data: order, error: orderError } = await supabase
     .from('orders')
     .insert({
       user_id: userId,
-      cashier_id: cashierId,
+      cashier_id: cashierId || null,
       status: 'pending',
-      total: 0,
+      total: total,
       shipping_address: orderData?.shipping_address || null,
     })
     .select()
@@ -37,11 +41,11 @@ export async function createOrder(
     return { data: null, error: orderError };
   }
 
-  // Insert order items
+  // Insert order items with correct prices
   const itemsWithOrderId = cartItems.map(item => ({
     order_id: order.id,
     product_id: item.product_id,
-    price: 0,
+    price: item.price ?? 0,
     quantity: item.quantity,
   }));
 
@@ -54,48 +58,16 @@ export async function createOrder(
     return { data: null, error: itemsError };
   }
 
-  // Fetch product prices, calculate total, and deduct stock
-  let total = 0;
-  for (const item of cartItems) {
-    const { data: product } = await supabase
-      .from('products')
-      .select('price, stock')
-      .eq('id', item.product_id)
-      .single();
-
-    if (product) {
-      const itemTotal = product.price * item.quantity;
-      total += itemTotal;
-
-      // Deduct stock from inventory
-      const newStock = Math.max(0, (product.stock || 0) - item.quantity);
-      const { error: stockError } = await supabase
-        .from('products')
-        .update({ stock: newStock })
-        .eq('id', item.product_id);
-
-      if (stockError) {
-        console.error(`Error updating stock for product ${item.product_id}:`, stockError);
-      }
+  // Log the order creation
+  if (order) {
+    await logOrderCreated(userId, order.id, total);
+    // Send notification to user
+    if (userId) {
+      await triggerOrderCreatedNotification(userId, order.id, total);
     }
   }
 
-  // Update order total
-  const { data: updatedOrder, error: updateError } = await supabase
-    .from('orders')
-    .update({ total })
-    .eq('id', order.id)
-    .select()
-    .single();
-
-  // Log the order creation
-  if (updatedOrder && !updateError) {
-    await logOrderCreated(userId, updatedOrder.id, total);
-    // Send notification to user
-    await triggerOrderCreatedNotification(userId, updatedOrder.id, total);
-  }
-
-  return { data: updatedOrder, error: updateError };
+  return { data: order as Order, error: null };
 }
 
 /**

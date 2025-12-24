@@ -106,10 +106,18 @@ export default function CheckoutPage() {
     }
 
     setLoading(true);
+    
+    // Prepare order items with prices from cart
+    const orderItems = items.map(item => ({
+      product_id: item.product_id,
+      quantity: item.quantity,
+      price: item.product?.price ?? 0,
+    }));
+    
     const { data, error } = await createOrder(
       user.id,
-      items,
-      user.id,
+      orderItems,
+      undefined,
       roles,
       {
         shipping_address: {

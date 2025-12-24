@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Package, Clock, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { getUserOrders } from '../services/orders.service';
+import { OrderDetailsModal } from '../components/OrderDetailsModal';
 
 const statusConfig = {
   pending: { icon: Clock, label: 'Pending', variant: 'secondary' as const },
@@ -17,6 +18,7 @@ const statusConfig = {
 export default function OrdersPage() {
   const { user, roles, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -62,7 +64,11 @@ export default function OrdersPage() {
             const StatusIcon = status.icon;
             
             return (
-              <Card key={order.id} className="hover-lift">
+              <Card 
+                key={order.id} 
+                className="hover-lift cursor-pointer transition-all hover:shadow-lg"
+                onClick={() => setSelectedOrderId(order.id)}
+              >
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div className="space-y-1">
@@ -93,6 +99,12 @@ export default function OrdersPage() {
               </Card>
             );
           })}
+          
+          <OrderDetailsModal 
+            orderId={selectedOrderId}
+            open={!!selectedOrderId}
+            onOpenChange={(open) => !open && setSelectedOrderId(null)}
+          />
         </div>
       )}
     </div>
