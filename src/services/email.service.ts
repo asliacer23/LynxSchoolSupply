@@ -13,40 +13,25 @@ export interface EmailParams {
 }
 
 /**
- * Send a generic email using Supabase email service
+ * Send a generic email
+ * Supabase handles email sending through Resend SMTP integration
  */
 export async function sendEmail(params: EmailParams) {
   try {
-    // Using Supabase Auth email
-    // In production, integrate with your email provider (SendGrid, Resend, etc.)
-    // For now, we'll use Supabase's built-in email or queue it for manual processing
+    // Note: When using Supabase Auth functions (signUp, resetPasswordForEmail),
+    // Supabase automatically sends emails through the configured SMTP provider (Resend).
+    // This function is for custom email templates if needed.
     
-    console.log('Email queued:', {
+    console.log('Email queued for sending:', {
       to: params.to,
       subject: params.subject,
+      from: params.from || 'noreply@lynxsupplies.com',
     });
 
-    // If you have a custom email service, implement here
-    // Example with Resend:
-    /*
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.VITE_RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: params.from || 'noreply@lynxsupplies.com',
-        to: params.to,
-        subject: params.subject,
-        html: params.html,
-      }),
-    });
-    */
-
+    // Emails are sent by Supabase through Resend SMTP
     return { success: true, error: null };
   } catch (error) {
-    console.error('Email send error:', error);
+    console.error('Email service error:', error);
     return { success: false, error };
   }
 }

@@ -1,24 +1,34 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { updatePasswordWithSession, verifyPasswordResetToken, resetPasswordSchema, type ResetPasswordInput } from '../services/password-recovery.service';
+import { supabase } from '@/lib/supabase';
 import LogoDark from '@/components/images/Black Transparent Logo.png';
 import LogoLight from '@/components/images/White Transparent Logo.png';
 import { useTheme } from '@/hooks/useTheme';
+
+const resetPasswordSchema = z.object({
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  confirmPassword: z.string(),
+}).refine(data => data.password === data.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
+});
+
+type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
 export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(true);
   const [isValid, setIsValid] = useState(false);
-  const [tokenError, setTokenError] = useState<string | null>(null);
   const [resetSuccess, setResetSuccess] = useState(false);
   const { theme } = useTheme();
   const navigate = useNavigate();
@@ -32,29 +42,33 @@ export default function ResetPasswordPage() {
     resolver: zodResolver(resetPasswordSchema),
   });
 
-  // Verify the recovery token on component mount
+  // Check if recovery session exists (Supabase sets this automatically when user clicks email link)
   useEffect(() => {
-    const verifyToken = async () => {
-      setVerifying(true);
-      const { isValid, error } = await verifyPasswordResetToken();
-      
-      if (isValid) {
-        setIsValid(true);
-        setTokenError(null);
-      } else {
-        setIsValid(false);
-        setTokenError(error);
-      }
-      
+    let mounted = true;
+
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+
+      if (!mounted) return;
+
+      setIsValid(!!data.session);
       setVerifying(false);
     };
 
-    verifyToken();
+    checkSession();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const onSubmit = async (data: ResetPasswordInput) => {
     setLoading(true);
-    const { error } = await updatePasswordWithSession(data.password);
+
+    const { error } = await supabase.auth.updateUser({
+      password: data.password,
+    });
+
     setLoading(false);
 
     if (error) {
@@ -107,14 +121,11 @@ export default function ResetPasswordPage() {
               </div>
             </div>
             <CardTitle className="text-2xl">Recovery Link Expired</CardTitle>
-            <CardDescription>{tokenError}</CardDescription>
+            <CardDescription>This recovery link is no longer valid. Please request a new one.</CardDescription>
           </CardHeader>
           <CardFooter>
-            <Button 
-              className="w-full h-10" 
-              asChild
-            >
-              <a href="/auth/forgot-password">Request New Link</a>
+            <Button className="w-full h-10" asChild>
+              <Link to="/auth/forgot-password">Request New Link</Link>
             </Button>
           </CardFooter>
         </Card>
@@ -156,64 +167,67 @@ export default function ResetPasswordPage() {
         </div>
 
         <div className="space-y-2 relative z-10">
-          <a href="/" className="inline-flex items-center gap-3">
+          <Link to="/" className="inline-flex items-center gap-3">
             <img src={logo} alt="Lynx School Supplies" className="h-12 w-auto" />
             <span className="text-xl font-bold">Lynx School Supplies</span>
-          </a>
+          </Link>
         </div>
 
         {/* Illustration Section */}
         <div className="flex items-center justify-center -mx-12 relative z-10">
           <svg className="w-full h-64 opacity-80" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
-            {/* Lock Open */}
+            {/* Lock Icon */}
             <g className="animate-bounce" style={{ animationDelay: '0s' }}>
-              <rect x="100" y="120" width="60" height="80" fill="none" stroke="currentColor" strokeWidth="3" strokeOpacity="0.6" rx="4" className="text-primary" />
-              <path d="M100 120 Q100 80 130 80 Q160 80 160 120" fill="none" stroke="currentColor" strokeWidth="3" strokeOpacity="0.6" className="text-primary" />
+              <rect x="100" y="110" width="80" height="100" fill="none" stroke="currentColor" strokeWidth="3" strokeOpacity="0.5" rx="4" className="text-primary" />
+              <path d="M120 110 Q120 80 140 80 Q160 80 160 110" fill="none" stroke="currentColor" strokeWidth="3" strokeOpacity="0.6" className="text-primary" />
+              <circle cx="140" cy="160" r="4" fill="currentColor" fillOpacity="0.5" className="text-primary" />
             </g>
-            {/* Shield */}
+            {/* Shield Icon */}
             <g className="animate-bounce" style={{ animationDelay: '0.2s' }}>
-              <path d="M260 100 L260 160 Q260 200 300 220 Q340 200 340 160 L340 100 Z" fill="none" stroke="currentColor" strokeWidth="3" strokeOpacity="0.6" className="text-primary" />
-              <path d="M290 140 L310 150 L300 170" fill="none" stroke="currentColor" strokeWidth="2.5" strokeOpacity="0.6" className="text-primary" />
+              <path d="M260 90 L260 140 Q260 180 300 200 Q340 180 340 140 L340 90 Z" fill="none" stroke="currentColor" strokeWidth="3" strokeOpacity="0.6" className="text-primary" />
+              <path d="M290 140 L310 160 L325 135" fill="none" stroke="currentColor" strokeWidth="2.5" strokeOpacity="0.6" className="text-primary" strokeLinecap="round" strokeLinejoin="round" />
             </g>
           </svg>
         </div>
 
         <div className="space-y-6 relative z-10">
           <div className="space-y-3">
-            <h2 className="text-3xl font-bold leading-tight">Create Your New Password</h2>
+            <h2 className="text-3xl font-bold leading-tight">Create New Password</h2>
             <p className="text-muted-foreground text-lg">Set a strong password to secure your account.</p>
           </div>
           <div className="space-y-3 text-sm text-muted-foreground">
             <div className="flex items-start gap-3">
               <span className="text-primary mt-1">✓</span>
-              <span>Minimum 6 characters required</span>
+              <span>Use a combination of letters and numbers</span>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-primary mt-1">✓</span>
-              <span>Use uppercase, lowercase, and numbers for security</span>
+              <span>At least 6 characters long</span>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-primary mt-1">✓</span>
-              <span>Your account will be secured immediately</span>
+              <span>Confirm your new password</span>
             </div>
           </div>
         </div>
         <p className="text-xs text-muted-foreground relative z-10">© 2025 Lynx School Supplies. All rights reserved.</p>
       </div>
 
-      {/* Right Side - Reset Form */}
+      {/* Right Side - Password Reset Form */}
       <div className="flex flex-col items-center justify-center p-4 md:p-8">
         <Card className="w-full max-w-sm slide-up border-0 md:border shadow-none md:shadow-lg">
           <CardHeader className="text-center space-y-4">
-            <a href="/" className="inline-flex items-center justify-center gap-2 mx-auto md:hidden">
+            <Link to="/" className="inline-flex items-center justify-center gap-2 mx-auto md:hidden">
               <img src={logo} alt="Lynx School Supplies" className="h-10 w-auto" />
               <span className="text-lg font-bold">Lynx</span>
-            </a>
-            <div className="space-y-2">
-              <CardTitle className="text-2xl">Reset Your Password</CardTitle>
-              <CardDescription>Create a new strong password for your account</CardDescription>
-            </div>
+            </Link>
+
+            <CardTitle className="text-2xl">Reset Password</CardTitle>
+            <CardDescription>
+              Enter your new password below
+            </CardDescription>
           </CardHeader>
+
           <form onSubmit={handleSubmit(onSubmit)}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -221,7 +235,7 @@ export default function ResetPasswordPage() {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="Enter new password"
                   {...register('password')}
                   className="h-10"
                 />
@@ -229,12 +243,13 @@ export default function ResetPasswordPage() {
                   <p className="text-sm text-destructive">{errors.password.message}</p>
                 )}
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="Confirm new password"
                   {...register('confirmPassword')}
                   className="h-10"
                 />
@@ -244,16 +259,25 @@ export default function ResetPasswordPage() {
               </div>
 
               <Alert>
-                <AlertDescription className="text-xs">
-                  Your password should be at least 6 characters long. Use a mix of uppercase, lowercase, and numbers for better security.
+                <AlertDescription className="text-xs space-y-1">
+                  <p className="font-semibold">Password Tips:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Use at least 6 characters</li>
+                    <li>Mix letters and numbers</li>
+                    <li>Avoid personal information</li>
+                  </ul>
                 </AlertDescription>
               </Alert>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex flex-col gap-3">
               <Button type="submit" className="w-full h-10" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Reset Password
               </Button>
+              <Link to="/auth/login" className="flex items-center justify-center gap-2 text-sm text-primary hover:underline">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Login
+              </Link>
             </CardFooter>
           </form>
         </Card>

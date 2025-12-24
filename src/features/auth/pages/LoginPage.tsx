@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { loginSchema, type LoginInput } from '../services/auth.service';
+import ForgotPasswordModal from '../components/ForgotPasswordModal';
 import LogoDark from '@/components/images/Black Transparent Logo.png';
 import LogoLight from '@/components/images/White Transparent Logo.png';
 import { useTheme } from '@/hooks/useTheme';
@@ -18,6 +19,7 @@ import { useTheme } from '@/hooks/useTheme';
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const { user, signIn } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
@@ -183,9 +185,13 @@ export default function LoginPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
-                  <Link to="/auth/forgot-password" className="text-xs text-primary hover:underline">
+                  <button 
+                    type="button"
+                    onClick={() => setForgotPasswordOpen(true)}
+                    className="text-xs text-primary hover:underline"
+                  >
                     Forgot password?
-                  </Link>
+                  </button>
                 </div>
                 <Input
                   id="password"
@@ -255,6 +261,11 @@ export default function LoginPage() {
             </CardFooter>
           </form>
         </Card>
+
+        <ForgotPasswordModal 
+          open={forgotPasswordOpen} 
+          onOpenChange={setForgotPasswordOpen}
+        />
       </div>
     </div>
   );

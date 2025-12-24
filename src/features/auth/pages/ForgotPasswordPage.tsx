@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +18,7 @@ import { useTheme } from '@/hooks/useTheme';
 export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [emailSent, setEmailSent] = useState('');
   const { user } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
@@ -46,14 +47,24 @@ export default function ForgotPasswordPage() {
     setLoading(false);
 
     if (error) {
+      // More specific error messages
+      let errorMessage = error.message || 'Failed to send recovery email.';
+      
+      if (error.message?.includes('500') || error.message?.includes('Internal Server Error')) {
+        errorMessage = 'Email service temporarily unavailable. Please try again later or contact support.';
+      } else if (error.message?.includes('not found') || error.message?.includes('User not found')) {
+        errorMessage = 'No account found with this email address.';
+      }
+      
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message || 'Failed to send recovery email. Please try again.',
+        description: errorMessage,
       });
       return;
     }
 
+    setEmailSent(data.email);
     setSubmitted(true);
     toast({
       title: 'Success!',
@@ -113,7 +124,7 @@ export default function ForgotPasswordPage() {
             </div>
             <div className="flex items-start gap-3">
               <span className="text-primary mt-1">✓</span>
-              <span>24-hour recovery link validity</span>
+              <span>Reset link valid for 24 hours</span>
             </div>
           </div>
         </div>
@@ -138,14 +149,14 @@ export default function ForgotPasswordPage() {
                 </div>
                 <CardTitle className="text-2xl">Check Your Email</CardTitle>
                 <CardDescription>
-                  We've sent a password recovery link to {emailValue}
+                  We've sent a password recovery link to {emailSent}
                 </CardDescription>
               </>
             ) : (
               <>
                 <CardTitle className="text-2xl">Forgot Password?</CardTitle>
                 <CardDescription>
-                  Enter your email address and we'll send you a link to reset your password
+                  Enter your email and we'll send you a link to reset your password
                 </CardDescription>
               </>
             )}
@@ -160,10 +171,10 @@ export default function ForgotPasswordPage() {
                   </AlertDescription>
                 </Alert>
                 <div className="space-y-3 text-sm text-muted-foreground bg-muted/50 p-4 rounded-lg">
-                  <p className="font-semibold text-foreground">Recovery Link Steps:</p>
+                  <p className="font-semibold text-foreground">What to do next:</p>
                   <ol className="list-decimal list-inside space-y-2">
                     <li>Check your email for the recovery link</li>
-                    <li>Click the link to verify it's really you</li>
+                    <li>Click the link to reset your password</li>
                     <li>Enter your new password</li>
                     <li>You'll be logged in automatically</li>
                   </ol>

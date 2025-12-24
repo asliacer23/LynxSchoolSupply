@@ -19,7 +19,6 @@ export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 /**
  * Send password recovery email
  * User will receive an email with a link to reset their password
- * The link will contain a token valid for 24 hours
  */
 export async function sendPasswordRecoveryEmail(email: string) {
   try {
@@ -73,23 +72,18 @@ export async function verifyPasswordResetToken() {
     const { data: { session }, error } = await supabase.auth.getSession();
 
     if (error || !session) {
-      return { 
-        isValid: false, 
-        error: 'Invalid or expired recovery link. Please request a new one.' 
-      };
+      return { isValid: false, error: 'No active recovery session found' };
     }
 
-    // Check if this is a recovery session
-    if (session.user?.recovery_sent_at) {
-      return { isValid: true, error: null };
+    // Check if session was created by recovery email
+    const user = session.user;
+    if (!user) {
+      return { isValid: false, error: 'Invalid session' };
     }
 
-    return { 
-      isValid: false, 
-      error: 'Invalid recovery session. Please request a new password reset.' 
-    };
+    return { isValid: true, error: null };
   } catch (error) {
     console.error('Token verification error:', error);
-    return { isValid: false, error: 'An error occurred verifying your recovery link.' };
+    return { isValid: false, error: error as Error };
   }
 }

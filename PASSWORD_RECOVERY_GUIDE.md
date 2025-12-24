@@ -1,7 +1,26 @@
 # Password Recovery Flow Documentation
 
 ## Overview
-The password recovery system allows users to securely reset their password via email. The flow uses Supabase Auth's built-in password recovery functionality.
+The password recovery system allows users to securely reset their password via email. The flow uses Supabase Auth's built-in password recovery functionality with email verification links.
+
+## ⚠️ IMPORTANT: Supabase Email Provider Setup Required
+
+**Before using password recovery, you MUST configure an email provider in Supabase:**
+
+### Setup Steps:
+1. Go to [Supabase Dashboard](https://app.supabase.com)
+2. Select your project
+3. Navigate to **Authentication** → **Providers**
+4. Enable **Email** provider
+5. For production, go to **Project Settings** → **Email Provider**
+   - Select SendGrid, Mailgun, or AWS SES
+   - Add your provider credentials
+6. Test the recovery flow in `/auth/forgot-password`
+
+### Why This is Needed:
+- Default Supabase email service has rate limits (20 emails/hour)
+- Production apps need a dedicated email provider
+- Without configuration, you'll get a 500 error when trying to send recovery emails
 
 ## Components & Pages
 
@@ -26,7 +45,7 @@ The password recovery system allows users to securely reset their password via e
   - User enters new password
   - Password is updated in Supabase
   - User is automatically logged in
-  - Redirects to dashboard
+  - Redirects to login page
 - **Features**:
   - Token verification on mount
   - Expired link handling
@@ -43,7 +62,7 @@ https://yourapp.com/auth/reset-password?token=xxxxx&type=recovery
 ```
 
 **Current Configuration:**
-- Recovery redirect URL: `https://yourapp.com/auth/reset-password`
+- Recovery redirect URL: `https://lynxschoolsupply.netlify.app/auth/reset-password`
 - Token type: `recovery` (automatically handled by Supabase)
 - Token validity: 24 hours (configurable in Supabase settings)
 
@@ -176,11 +195,33 @@ All security-sensitive operations are handled server-side by Supabase.
 
 ## Troubleshooting
 
+### "Email service is not configured" or 500 Error
+
+**Root Cause**: The Supabase email provider is not set up in your project.
+
+**Solution**:
+1. Go to [Supabase Dashboard](https://app.supabase.com)
+2. Navigate to **Authentication** → **Email Templates**
+3. You should see the "Reset Password" template
+4. Go to **Authentication** → **Providers**
+5. Ensure **Email** provider is enabled
+6. For production, configure an external email provider:
+   - Go to **Project Settings** → **Email Provider**
+   - Choose: SendGrid, Mailgun, or AWS SES
+   - Add credentials for your selected provider
+7. Test the recovery flow again
+
+**Temporary Workaround** (Development):
+- Use Supabase's default email provider (limited to 20 emails/hour)
+- Emails may take 1-2 minutes to arrive
+- Check spam/junk folder
+
 ### Recovery email not received
 1. Check spam/junk folder
 2. Verify email address is correct
 3. Wait a few moments (SMTP delivery can take time)
 4. Request a new recovery link
+5. Verify your email provider is configured in Supabase
 
 ### "Invalid or expired recovery link" error
 1. Recovery link expires after 24 hours
@@ -191,6 +232,7 @@ All security-sensitive operations are handled server-side by Supabase.
 1. Make sure you're using your new password
 2. Clear browser cache
 3. Try in incognito/private window
+4. Verify the email address used matches your account
 
 ## Related Files
 - `/src/features/auth/pages/LoginPage.tsx` - Links to forgot password
